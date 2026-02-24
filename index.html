@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 圖片路徑標示版</title>
+    <title>寶石拉霸機 - 資源存取優化版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --darkblue: #2b57ff; --bg: #121212; }
@@ -13,10 +13,7 @@
         .panel { background: rgba(30,30,30,0.9); padding: 20px; border-radius: 12px; border: 1px solid #444; }
         #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
         .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; overflow: hidden; }
-        
-        /* 圖片縮放與顯示設定 */
-        .cell img { width: 90%; height: 90%; object-fit: contain; }
-        
+        .cell img { width: 85% !important; height: 85% !important; object-fit: contain !important; display: block; }
         .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 40%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 999; text-shadow: 0 0 30px #000; pointer-events: none; white-space: nowrap; }
         @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
         @media (max-width: 1100px) {
@@ -39,7 +36,7 @@
 
     <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; padding:20px;">
         <div class="panel" style="max-width:450px; border:2px solid var(--gold);" onclick="event.stopPropagation()">
-            <h3 style="color:var(--gold); text-align:center;">💎 修正版規則表</h3>
+            <h3 style="color:var(--gold); text-align:center;">💎 規則表</h3>
             <table style="width:100%; text-align:center; border-collapse:collapse;">
                 <tr style="color:var(--gold); border-bottom:1px solid #555;"><th>寶石</th><th>3連</th><th>4連</th><th>5連</th></tr>
                 <tr><td class="txt-cyan">鑽石 (10%)</td><td>200</td><td>300</td><td>600</td></tr>
@@ -60,12 +57,14 @@
     </div>
 
     <div id="game-area">
-        <div class="panel">
-            <h3>🎯 任務紀錄</h3>
-            <textarea id="m-content" placeholder="輸入內容..." style="width:95%; height:60px; background:#111; color:white; padding:10px; border:1px solid #444;"></textarea>
-            <button onclick="addMission('small')" style="width:100%; margin-top:10px;">小目標 (+1轉)</button>
-            <button onclick="addMission('big')" style="width:100%; margin-top:10px; background:#b8860b;">大成就 (+5轉)</button>
-            <div id="mission-list" style="margin-top:15px; font-size: 0.85rem; height: 250px; overflow-y: auto;"></div>
+        <div style="display:flex; flex-direction:column; gap:20px;">
+            <div class="panel">
+                <h3>🎯 任務紀錄</h3>
+                <textarea id="m-content" placeholder="輸入內容..." style="width:95%; height:60px; background:#111; color:white; padding:10px; border:1px solid #444;"></textarea>
+                <button onclick="addMission('small')" style="width:100%; margin-top:10px;">小目標 (+1轉)</button>
+                <button onclick="addMission('big')" style="width:100%; margin-top:10px; background:#b8860b;">大成就 (+5轉)</button>
+                <div id="mission-list" style="margin-top:15px; font-size: 0.85rem; height: 250px; overflow-y: auto;"></div>
+            </div>
         </div>
 
         <div style="text-align: center;">
@@ -97,11 +96,6 @@ const SB_URL = "https://knasaqqsqofcskazalwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYXNhcXFzcW9mY3NrYXphbHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTcxNTksImV4cCI6MjA4NzQ5MzE1OX0.TxpnxsEGd6L2aBfHn2FttPFXtMyk3VeM44IgyzheTpU";
 const _sb = supabase.createClient(SB_URL, SB_KEY);
 
-/**
- * 【圖片修改處】
- * 請在下面的 img: "" 中填入圖片的網址，例如 img: "https://example.com/diamond.png"
- * 如果保持為空 ""，則會顯示 emoji 符號代替。
- */
 const SYMBOLS = [
     { id: 0, name: '💎', img: "https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/diamond.PNG", prob: 0.10, p3: 200, p4: 300, p5: 600, label: '鑽石', color: '#00f2ff' },
     { id: 1, name: '🔮', img: "https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Amethyst.PNG", prob: 0.22, p3: 25,  p4: 45,  p5: 75,  label: '紫水晶', color: '#d084ff' },
@@ -156,15 +150,20 @@ function initGrid() {
 }
 
 /**
- * 渲染格子函數 - 已加入圖片優先邏輯
+ * 🎨 優化後的渲染函數：增加 crossOrigin 並微調加載邏輯
  */
 function renderCell(idx, symbol) {
     const cell = document.getElementById(`c-${idx}`);
-    if (symbol.img && symbol.img !== "") {
-        // 如果有填寫圖片網址，顯示圖片
-        cell.innerHTML = `<img src="${symbol.img}" alt="${symbol.label}">`;
+    // 直接放入圖片，只有在明確加載失敗時才透過 onerror 顯示 Emoji
+    if (symbol.img && symbol.img.includes("http")) {
+        cell.innerHTML = `
+            <img src="${symbol.img}" 
+                 crossorigin="anonymous" 
+                 onerror="this.style.display='none'; this.nextSibling.style.display='block';" 
+                 alt="${symbol.label}">
+            <span style="display:none; color:${symbol.color}; font-size:2.5rem;">${symbol.name}</span>
+        `;
     } else {
-        // 如果沒有填寫圖片網址，顯示文字符號 (Emoji)
         cell.innerHTML = `<span style="color:${symbol.color}; font-size:2.5rem;">${symbol.name}</span>`;
     }
 }
@@ -176,7 +175,7 @@ async function processSpin() {
     isBusy = true;
     const btn = document.getElementById('spin-btn');
     btn.disabled = true;
-    btn.innerText = "結算中...";
+    btn.innerText = "旋轉中...";
 
     document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
     
