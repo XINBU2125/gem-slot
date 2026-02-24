@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 萬全連線版</title>
+    <title>寶石拉霸機 - 純粹連線校正版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --darkblue: #2b57ff; --bg: #121212; }
@@ -23,8 +23,6 @@
             .cell { width: 16vw !important; height: 16vw !important; }
             .score-pop { font-size: 3rem !important; }
         }
-        .shaking { animation: shake 0.1s infinite; }
-        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
         .winning-cell { border-color: white !important; box-shadow: 0 0 20px white; background: #333 !important; z-index: 5; }
         button { padding: 12px 20px; background: var(--gold); border: none; cursor: pointer; font-weight: bold; border-radius: 6px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -48,9 +46,10 @@
                 <tr><td class="txt-white">珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
             </table>
             <div style="font-size:0.85rem; color:#bbb; margin-top:15px; line-height:1.6;">
-                • <b>疊加計分：</b>4個寶石相連算2組3連；5個寶石相連算3組3連 + 5連大獎。<br>
-                • <b class="txt-purple">紫水晶：</b>盤面「僅有」此寶石連線時，分數翻倍。<br>
-                • <b class="txt-red">尖晶石：</b>每組連線使獲得分數加 10%。<br>
+                • <b>橫向：</b>3連、5連計分。<br>
+                • <b>縱向與斜向：</b>僅計 3連計分。<br>
+                • <b class="txt-purple">紫水晶：</b>盤面「僅有」此寶石中獎時，分數翻倍。<br>
+                • <b class="txt-red">尖晶石：</b>每組連線額外加成總分 10%。<br>
                 • <b class="txt-blue">天青石：</b>每組連線額外獲得 1 次轉動機會。
             </div>
             <button onclick="toggleRules()" style="width:100%; margin-top:15px;">關閉</button>
@@ -202,42 +201,51 @@ async function processSpin() {
     document.getElementById('spin-btn').disabled = false;
 }
 
+/**
+ * 徹底修正後的掃描邏輯
+ * 橫向：3連、5連
+ * 直向：3連
+ * 斜向：標準 3x3 對角線 (159, 753)
+ */
 function analyzeGrid(grid) {
     const wins = [];
 
-    // 1. 橫向掃描 (只看橫向連續)
-    for (let r = 0; r < 3; r++) {
-        let rowStart = r * 5;
-        let rowIds = [grid[rowStart].id, grid[rowStart+1].id, grid[rowStart+2].id, grid[rowStart+3].id, grid[rowStart+4].id];
-        
-        // 檢查橫向 5 連
-        if (rowIds.every(id => id === rowIds[0])) {
-            wins.push({ pts: grid[rowStart].p5, id: rowIds[0], cells: [rowStart, rowStart+1, rowStart+2, rowStart+3, rowStart+4], label: grid[rowStart].label, isBig: true });
+    // --- 1. 橫向連線路徑 (5格一組) ---
+    const rowPaths = [
+        [0, 1, 2, 3, 4],    // 上橫
+        [5, 6, 7, 8, 9],    // 中橫
+        [10, 11, 12, 13, 14] // 下橫
+    ];
+    rowPaths.forEach(path => {
+        const id = grid[path[0]].id;
+        // 檢查 5 連
+        if (path.every(idx => grid[idx].id === id)) {
+            wins.push({ pts: grid[path[0]].p5, id: id, cells: path, label: grid[path[0]].label, isBig: true });
         } else {
-            // 檢查橫向 3 連 (掃描三個可能的起始點：0,1,2)
-            for (let c = 0; c <= 2; c++) {
-                if (rowIds[c] === rowIds[c+1] && rowIds[c] === rowIds[c+2]) {
-                    wins.push({ pts: grid[rowStart].p3, id: rowIds[c], cells: [rowStart+c, rowStart+c+1, rowStart+c+2], label: grid[rowStart].label });
+            // 檢查橫向 3 連 (每排有三種可能：012, 123, 234)
+            for (let i = 0; i <= 2; i++) {
+                if (grid[path[i]].id === id && grid[path[i+1]].id === id && grid[path[i+2]].id === id) {
+                    wins.push({ pts: grid[path[0]].p3, id: id, cells: [path[i], path[i+1], path[i+2]], label: grid[path[0]].label });
                 }
             }
         }
-    }
+    });
 
-    // 2. 縱向掃描 (3格一列，只有3連)
+    // --- 2. 縱向連線路徑 (3格一組) ---
     for (let c = 0; c < 5; c++) {
         if (grid[c].id === grid[c+5].id && grid[c].id === grid[c+10].id) {
             wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+5, c+10], label: grid[c].label });
         }
     }
 
-    // 3. 斜向掃描 (九宮格 159 與 753 型)
-    // 5x3 盤面中，可以形成 3x3 九宮格的起始點有三個 (第0, 1, 2列)
+    // --- 3. 標準對角線路徑 (159 與 753) ---
+    // 在 5x3 中，可形成九宮格的起始點有第 0, 1, 2 列
     for (let c = 0; c <= 2; c++) {
-        // 斜線：左上(1) -> 中(5) -> 右下(9)
+        // 斜下 (左上到右下: 1-5-9 型)
         if (grid[c].id === grid[c+6].id && grid[c].id === grid[c+12].id) {
             wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+6, c+12], label: grid[c].label });
         }
-        // 斜線：右上(7) -> 中(5) -> 左下(3)
+        // 斜上 (右上到左下: 7-5-3 型)
         let topRight = c + 2;
         if (grid[topRight].id === grid[topRight+4].id && grid[topRight].id === grid[topRight+8].id) {
             wins.push({ pts: grid[topRight].p3, id: grid[topRight].id, cells: [topRight, topRight+4, topRight+8], label: grid[topRight].label });
@@ -248,7 +256,7 @@ function analyzeGrid(grid) {
 }
 
 async function calculateScore(grid, wins) {
-    let spinTotal = 0, spinelBonus = 0;
+    let spinTotal = 0; let spinelBonus = 0;
     const onlyAmethyst = wins.length > 0 && wins.every(w => w.id === 1);
     for (const win of wins) {
         let s = win.pts;
