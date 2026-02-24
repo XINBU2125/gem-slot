@@ -3,32 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 圖片強化版</title>
+    <title>寶石拉霸機 - 終極校正版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --darkblue: #2b57ff; --bg: #121212; }
-        body { background: var(--bg); color: white; font-family: 'Microsoft JhengHei', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; overflow-x: hidden; }
+        body { background: var(--bg); color: white; font-family: 'Microsoft JhengHei', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
+        
         .auth-box { background: #222; padding: 40px; border-radius: 15px; border: 2px solid var(--gold); text-align: center; margin-top: 50px; }
+        
+        /* 電腦版主配置 */
         #game-area { display: none; width: 1150px; grid-template-columns: 300px 1fr 280px; gap: 25px; }
         .panel { background: rgba(30,30,30,0.9); padding: 20px; border-radius: 12px; border: 1px solid #444; }
 
-        /* 手機 RWD */
+        /* 拉霸格子與圖片基礎 */
+        #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
+        .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; }
+        .cell img { width: 85% !important; height: 85% !important; object-fit: contain; }
+        
+        /* 跳分特效修正 */
+        .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 40%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 999; text-shadow: 0 0 30px #000; pointer-events: none; white-space: nowrap; }
+        @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
+
+        /* 手機 RWD 強制覆蓋 */
         @media (max-width: 1100px) {
             #game-area { display: none; flex-direction: column !important; width: 100vw !important; padding: 10px 0 !important; gap: 15px !important; }
             .panel { width: 92vw !important; margin: 0 auto !important; box-sizing: border-box !important; }
-            #slot-grid { grid-template-columns: repeat(5, 17vw) !important; width: 90vw !important; padding: 10px !important; gap: 1.5vw !important; margin: 0 auto !important; }
+            #slot-grid { grid-template-columns: repeat(5, 17vw) !important; width: 92vw !important; padding: 10px !important; gap: 1.5vw !important; margin: 0 auto !important; }
             .cell { width: 16vw !important; height: 16vw !important; }
+            .score-pop { font-size: 3rem !important; }
         }
 
-        #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
-        .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid transparent; }
-        .cell img { width: 85%; height: 85%; object-fit: contain; }
-        
         .shaking { animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
-        .winning-cell { border-color: white !important; box-shadow: 0 0 15px white; background: #333 !important; z-index: 5; }
-        .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 200; text-shadow: 0 0 30px #000; pointer-events: none; }
-        @keyframes floatUpCentral { 0% { opacity: 0; transform: translateY(0%); } 100% { opacity: 0; transform: translateY(-100%); } }
+        .winning-cell { border-color: white !important; box-shadow: 0 0 20px white; background: #333 !important; z-index: 5; }
         
         button { padding: 12px 20px; background: var(--gold); border: none; cursor: pointer; font-weight: bold; border-radius: 6px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -38,9 +45,9 @@
 </head>
 <body>
 
-    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000;">?</div>
+    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000; box-shadow: 0 0 10px rgba(255,215,0,0.5);">?</div>
 
-    <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999; justify-content:center; align-items:center; padding:20px;">
+    <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; padding:20px;">
         <div class="panel" style="max-width:450px; border:2px solid var(--gold);" onclick="event.stopPropagation()">
             <h3 style="color:var(--gold); text-align:center;">💎 寶石規則說明</h3>
             <table>
@@ -51,10 +58,10 @@
                 <tr><td class="txt-blue">天青石</td><td>15%</td><td>10</td><td>20</td></tr>
                 <tr><td class="txt-white">珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
             </table>
-            <div style="font-size:0.8rem; color:#bbb; margin-top:15px; line-height:1.6;">
-                • <b>疊加計分：</b>4連算2組3連；5連算3組3連 + 5連大獎。<br>
-                • <b class="txt-purple">紫水晶：</b>盤面「僅有」此寶石中獎時，分數翻倍。<br>
-                • <b class="txt-red">尖晶石：</b>每組連線額外加成總分 10%。<br>
+            <div style="font-size:0.85rem; color:#bbb; margin-top:15px; line-height:1.6;">
+                • <b>疊加計分：</b>4個寶石相連算2組3連；5個寶石相連算3組3連 + 5連大獎。<br>
+                • <b class="txt-purple">紫水晶：</b>盤面「僅有」此寶石連線時，分數翻倍。<br>
+                • <b class="txt-red">尖晶石：</b>每組連線額外獲得10%分數。<br>
                 • <b class="txt-blue">天青石：</b>每組連線額外獲得 1 次轉動機會。
             </div>
             <button onclick="toggleRules()" style="width:100%; margin-top:15px;">關閉</button>
@@ -71,14 +78,14 @@
     <div id="game-area">
         <div class="panel">
             <h3>🎯 任務紀錄</h3>
-            <textarea id="m-content" placeholder="輸入內容..." style="width:90%; height:60px; background:#111; color:white; padding:10px;"></textarea>
+            <textarea id="m-content" placeholder="輸入內容..." style="width:95%; height:60px; background:#111; color:white; padding:10px; border:1px solid #444;"></textarea>
             <button onclick="addMission('small')" style="width:100%; margin-top:10px;">小目標 (+1轉)</button>
             <button onclick="addMission('big')" style="width:100%; margin-top:10px; background:#b8860b;">大成就 (+5轉)</button>
             <div id="mission-list" style="margin-top:15px; font-size: 0.85rem; height: 250px; overflow-y: auto;"></div>
         </div>
 
         <div style="text-align: center;">
-            <div id="guarantee-msg" style="color:#ffeb3b; font-weight:bold; visibility:hidden;">⭐ 今日首轉：保底中獎模式</div>
+            <div id="guarantee-msg" style="color:#ffeb3b; font-weight:bold; visibility:hidden; font-size: 0.9rem;">⭐ 今日首轉：保底中獎模式</div>
             <div style="margin-bottom:10px;">
                 <span style="color:#aaa;">總積分</span>
                 <div id="point-display" style="color:var(--gold); font-size: 3rem; font-weight:bold;">0</div>
@@ -97,7 +104,7 @@
                 <div>額外機會</div>
                 <div id="extra-count" style="font-size:2rem; font-weight:bold;">0</div>
             </div>
-            <div id="game-log" style="margin-top:15px; height: 150px; overflow-y: auto; font-size: 0.75rem; color:#888; border-top:1px solid #333;">> 紀錄區...</div>
+            <div id="game-log" style="margin-top:15px; height: 150px; overflow-y: auto; font-size: 0.75rem; color:#888; border-top:1px solid #333; padding-top:10px;">> 紀錄區...</div>
         </div>
     </div>
 
@@ -115,9 +122,7 @@ const SYMBOLS = [
     { id: 4, name: '⚪', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG', prob: 0.40, p3: 20,  p5: 30,  label: '珍珠', color: '#eee' }
 ];
 
-let userData = null;
-let isBusy = false;
-let isFirstSpinToday = false;
+let userData = null; let isBusy = false; let isFirstSpinToday = false;
 
 function toggleRules() {
     const m = document.getElementById('rule-modal');
@@ -139,10 +144,14 @@ async function handleLogin() {
         }
         checkDaily();
         document.getElementById('login-screen').style.display = 'none';
-        const gameArea = document.getElementById('game-area');
-        gameArea.style.display = window.innerWidth <= 1100 ? 'flex' : 'grid';
+        updateAreaLayout();
         initGrid(); loadMissions(); updateUI();
     } catch (e) { console.error(e); }
+}
+
+function updateAreaLayout() {
+    const gameArea = document.getElementById('game-area');
+    gameArea.style.display = window.innerWidth <= 1100 ? 'flex' : 'grid';
 }
 
 function checkDaily() {
@@ -161,12 +170,10 @@ function initGrid() {
 
 function renderCell(idx, symbol) {
     const cell = document.getElementById(`c-${idx}`);
-    if (symbol.img) {
+    if (symbol.img && symbol.img !== '') {
         cell.innerHTML = `<img src="${symbol.img}" alt="${symbol.label}">`;
     } else {
-        cell.innerHTML = symbol.name;
-        cell.style.color = symbol.color;
-        cell.style.fontSize = '2.5rem';
+        cell.innerHTML = `<span style="color:${symbol.color}; font-size:2.5rem;">${symbol.name}</span>`;
     }
 }
 
@@ -181,8 +188,7 @@ async function processSpin() {
     gridEl.classList.add('shaking');
     const interval = setInterval(() => {
         for(let i=0; i<15; i++) {
-            const r = SYMBOLS[Math.floor(Math.random()*5)];
-            renderCell(i, r);
+            renderCell(i, SYMBOLS[Math.floor(Math.random()*5)]);
         }
     }, 80);
 
@@ -205,7 +211,6 @@ async function processSpin() {
     else { if(userData.extra_spins > 0) userData.extra_spins--; else userData.spins--; }
 
     for(let i=0; i<15; i++) renderCell(i, finalGrid[i]);
-
     await calculateScore(finalGrid, winMatches);
     isBusy = false;
     document.getElementById('spin-btn').disabled = false;
@@ -243,7 +248,7 @@ async function calculateScore(grid, wins) {
         spinTotal += s;
         showPop(s, SYMBOLS[win.id].color);
         addLog(`${win.label}${win.isBig?'大獎':'連線'} (+${s})`);
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 450));
     }
     if(spinelBonus > 0 && spinTotal > 0) {
         let b = Math.round(spinTotal * 0.1 * spinelBonus);
@@ -294,23 +299,13 @@ async function loadMissions() {
 }
 
 function handleWithdraw() {
-    const v = prompt("輸入提領分數:");
-    const a = parseInt(v);
+    const v = prompt("輸入提領分數:"); const a = parseInt(v);
     if(a > 0 && a <= userData.total_points) { userData.total_points -= a; syncData(); updateUI(); alert("提領成功！"); }
 }
 
 function addLog(m) { const l = document.getElementById('game-log'); l.innerHTML = `<div>> ${m}</div>` + l.innerHTML; }
 
-window.addEventListener('resize', () => {
-    if(userData) {
-        document.getElementById('game-area').style.display = window.innerWidth <= 1100 ? 'flex' : 'grid';
-    }
-});
-
-function toggleRules() {
-    const m = document.getElementById('rule-modal');
-    m.style.display = (m.style.display === 'none' || m.style.display === '') ? 'flex' : 'none';
-}
+window.addEventListener('resize', () => { if(userData) updateAreaLayout(); });
 </script>
 </body>
 </html>
