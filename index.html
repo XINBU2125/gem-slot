@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 規則大改版</title>
+    <title>寶石拉霸機 - 邏輯最終校正版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --darkblue: #2b57ff; --bg: #121212; }
@@ -13,7 +13,6 @@
         .panel { background: rgba(30,30,30,0.9); padding: 20px; border-radius: 12px; border: 1px solid #444; }
         #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
         .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; }
-        .cell img { width: 85% !important; height: 85% !important; object-fit: contain; }
         .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 40%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 999; text-shadow: 0 0 30px #000; pointer-events: none; white-space: nowrap; }
         @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
         @media (max-width: 1100px) {
@@ -36,7 +35,7 @@
 
     <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; padding:20px;">
         <div class="panel" style="max-width:450px; border:2px solid var(--gold);" onclick="event.stopPropagation()">
-            <h3 style="color:var(--gold); text-align:center;">💎 新·寶石規則</h3>
+            <h3 style="color:var(--gold); text-align:center;">💎 修正版規則表</h3>
             <table style="width:100%; text-align:center; border-collapse:collapse;">
                 <tr style="color:var(--gold); border-bottom:1px solid #555;"><th>寶石</th><th>3連</th><th>4連</th><th>5連</th></tr>
                 <tr><td class="txt-cyan">鑽石 (10%)</td><td>200</td><td>300</td><td>600</td></tr>
@@ -45,6 +44,7 @@
                 <tr><td class="txt-blue">天青石 (17%)</td><td>10</td><td>20</td><td>40</td></tr>
                 <tr><td class="txt-white">珍珠 (34%)</td><td>20</td><td>30</td><td>40</td></tr>
             </table>
+            <div style="font-size:0.8rem; margin-top:10px; color:#aaa;">* 橫向依長度計分(不重疊)；縱斜僅計3連。</div>
             <button onclick="toggleRules()" style="width:100%; margin-top:15px;">關閉</button>
         </div>
     </div>
@@ -66,7 +66,7 @@
         </div>
 
         <div style="text-align: center;">
-            <div id="guarantee-msg" style="color:#ffeb3b; font-weight:bold; visibility:hidden; font-size: 0.9rem;">⭐ 今日首轉：保底中獎模式</div>
+            <div id="guarantee-msg" style="color:#ffeb3b; font-weight:bold; visibility:hidden; font-size: 0.9rem;">⭐ 今日首轉保底</div>
             <div style="margin-bottom:10px;">
                 <span style="color:#aaa;">總積分</span>
                 <div id="point-display" style="color:var(--gold); font-size: 3rem; font-weight:bold;">0</div>
@@ -95,11 +95,11 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const _sb = supabase.createClient(SB_URL, SB_KEY);
 
 const SYMBOLS = [
-    { id: 0, name: '💎', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/diamond.PNG', prob: 0.10, p3: 200, p4: 300, p5: 600, label: '鑽石', color: '#00f2ff' },
-    { id: 1, name: '🔮', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Amethyst.PNG', prob: 0.22, p3: 25,  p4: 45,  p5: 75,  label: '紫水晶', color: '#d084ff' },
-    { id: 2, name: '♦️', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Spinel.PNG', prob: 0.17, p3: 10,  p4: 20,  p5: 40,  label: '尖晶石', color: '#ff4d4d' },
-    { id: 3, name: '💧', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Celestite.PNG', prob: 0.17, p3: 10,  p4: 20,  p5: 40,  label: '天青石', color: '#2b57ff' },
-    { id: 4, name: '⚪', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG', prob: 0.34, p3: 20,  p4: 30,  p5: 40,  label: '珍珠', color: '#eee' }
+    { id: 0, name: '💎', img:'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/diamond.PNG', prob: 0.10, p3: 200, p4: 300, p5: 600, label: '鑽石', color: '#00f2ff' },
+    { id: 1, name: '🔮', img:'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Amethyst.PNG', prob: 0.22, p3: 25,  p4: 45,  p5: 75,  label: '紫水晶', color: '#d084ff' },
+    { id: 2, name: '♦️', img:'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Spinel.PNG', prob: 0.17, p3: 10,  p4: 20,  p5: 40,  label: '尖晶石', color: '#ff4d4d' },
+    { id: 3, name: '💧', img:'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Celestite.PNG', prob: 0.17, p3: 10,  p4: 20,  p5: 40,  label: '天青石', color: '#2b57ff' },
+    { id: 4, name: '⚪', img:'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG', prob: 0.34, p3: 20,  p4: 30,  p5: 40,  label: '珍珠', color: '#eee' }
 ];
 
 let userData = null; let isBusy = false; let isFirstSpinToday = false;
@@ -159,12 +159,9 @@ async function processSpin() {
     isBusy = true;
     const btn = document.getElementById('spin-btn');
     btn.disabled = true;
-    btn.innerText = "計算中...";
+    btn.innerText = "結算中...";
 
-    document.querySelectorAll('.cell').forEach(c => {
-        c.classList.remove('winning-cell');
-        c.style.background = "";
-    });
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
     
     const gridEl = document.getElementById('slot-grid');
     gridEl.classList.add('shaking');
@@ -193,67 +190,67 @@ async function processSpin() {
     for(let i=0; i<15; i++) renderCell(i, finalGrid[i]);
     await calculateScore(finalGrid, winMatches);
 
-    isBusy = false;
-    btn.disabled = false;
-    btn.innerText = "🎰 開始轉動";
+    isBusy = false; btn.disabled = false; btn.innerText = "🎰 開始轉動";
     updateUI();
 }
 
-/** * 核心掃描規則：
- * 橫向：優先判斷 5連 -> 4連 -> 3連 (不重疊)
- * 縱、斜：僅 3連
+/** * 🛠️ 核心掃描校正：手動分級窗口檢查
  */
 function analyzeGrid(grid) {
     const wins = [];
 
     // 1. 橫向掃描 (三列)
-    const rows = [[0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14]];
-    rows.forEach(path => {
-        let maxLen = 1;
-        let startIdx = 0;
-        let currentId = grid[path[0]].id;
+    const rowStarts = [0, 5, 10];
+    rowStarts.forEach(start => {
+        const row = [start, start+1, start+2, start+3, start+4];
+        const ids = row.map(idx => grid[idx].id);
+        let foundRowWin = false;
 
-        // 簡單掃描該排最長連續
-        for (let i = 1; i < path.length; i++) {
-            if (grid[path[i]].id === currentId) {
-                maxLen++;
-                // 如果到結尾了，處理這組
-                if (i === path.length - 1) checkAndAdd(maxLen, i - maxLen + 1);
-            } else {
-                checkAndAdd(maxLen, i - maxLen);
-                currentId = grid[path[i]].id;
-                maxLen = 1;
+        // A. 檢查 5連 (01234)
+        if (ids[0]===ids[1] && ids[1]===ids[2] && ids[2]===ids[3] && ids[3]===ids[4]) {
+            const sym = grid[row[0]];
+            wins.push({ pts: sym.p5, id: sym.id, cells: row, label: sym.label, count: 5 });
+            foundRowWin = true;
+        } 
+        
+        // B. 檢查 4連 (0123 或 1234)
+        if (!foundRowWin) {
+            for (let i = 0; i <= 1; i++) {
+                if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2] && ids[i+2]===ids[i+3]) {
+                    const sym = grid[row[i]];
+                    wins.push({ pts: sym.p4, id: sym.id, cells: row.slice(i, i+4), label: sym.label, count: 4 });
+                    foundRowWin = true; 
+                    break; // 一排只計一次最高連線
+                }
             }
         }
 
-        function checkAndAdd(len, sIdxInPath) {
-            if (len >= 3) {
-                const cells = path.slice(sIdxInPath, sIdxInPath + len);
-                const symbol = grid[cells[0]];
-                let score = 0;
-                if (len === 5) score = symbol.p5;
-                else if (len === 4) score = symbol.p4;
-                else score = symbol.p3;
-                
-                wins.push({ pts: score, id: symbol.id, cells: cells, label: symbol.label, count: len });
+        // C. 檢查 3連 (012, 123, 234)
+        if (!foundRowWin) {
+            for (let i = 0; i <= 2; i++) {
+                if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2]) {
+                    const sym = grid[row[i]];
+                    wins.push({ pts: sym.p3, id: sym.id, cells: row.slice(i, i+3), label: sym.label, count: 3 });
+                    // 如果這排出現了3連，我們不再繼續找這排的其他3連 (遵循不重疊規則)
+                    foundRowWin = true;
+                    break;
+                }
             }
         }
     });
 
-    // 2. 縱向掃描 (五行，僅3連)
+    // 2. 縱向掃描 (僅3連)
     for (let c = 0; c < 5; c++) {
         if (grid[c].id === grid[c+5].id && grid[c].id === grid[c+10].id) {
             wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+5, c+10], label: grid[c].label, count: 3 });
         }
     }
 
-    // 3. 斜向掃描 (3x3 對角線，僅3連)
+    // 3. 斜向掃描 (僅3連)
     for (let c = 0; c <= 2; c++) {
-        // 1-5-9
         if (grid[c].id === grid[c+6].id && grid[c].id === grid[c+12].id) {
             wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+6, c+12], label: grid[c].label, count: 3 });
         }
-        // 7-5-3
         let tr = c + 2;
         if (grid[tr].id === grid[tr+4].id && grid[tr].id === grid[tr+8].id) {
             wins.push({ pts: grid[tr].p3, id: grid[tr].id, cells: [tr, tr+4, tr+8], label: grid[tr].label, count: 3 });
@@ -263,45 +260,46 @@ function analyzeGrid(grid) {
 }
 
 async function calculateScore(grid, wins) {
-    let spinTotal = 0;
+    let baseScore = 0;
     let spinelCount = 0;
     const amethystOnly = wins.length > 0 && wins.every(w => w.id === 1);
     
+    // 依序處理連線
     for (const win of wins) {
-        let s = win.pts;
         win.cells.forEach(idx => document.getElementById(`c-${idx}`).classList.add('winning-cell'));
         
-        // 天青石：加轉
-        if(win.id === 3) { userData.extra_spins++; updateUI(); }
-        // 尖晶石：計數
-        if(win.id === 2) spinelCount++;
+        if(win.id === 3) { userData.extra_spins++; }
+        if(win.id === 2) { spinelCount++; }
 
-        spinTotal += s;
-        showPop(s, SYMBOLS[win.id].color);
-        addLog(`${win.label}${win.count}連 (+${s})`);
+        baseScore += win.pts;
+        showPop(win.pts, SYMBOLS[win.id].color);
+        addLog(`${win.label}${win.count}連 (+${win.pts})`);
         await new Promise(r => setTimeout(r, 600));
     }
 
-    // 尖晶石加成：每組連線+10%
-    if (spinelCount > 0 && spinTotal > 0) {
-        let bonus = Math.round(spinTotal * 0.1 * wins.length);
-        spinTotal += bonus;
+    let finalAdded = baseScore;
+
+    // 尖晶石加成 (每組連線+10%)
+    if (spinelCount > 0 && baseScore > 0) {
+        let bonus = Math.round(baseScore * 0.1 * wins.length);
+        finalAdded += bonus;
         showPop(bonus, 'var(--red)');
-        addLog(`尖晶石連線加成 (+${bonus})`);
+        addLog(`尖晶石加成 (+${bonus})`);
         await new Promise(r => setTimeout(r, 500));
     }
 
-    // 紫水晶加成：僅紫水晶連線 x2
-    if (amethystOnly) {
-        let double = spinTotal;
-        spinTotal += double;
+    // 紫水晶翻倍 (僅有紫水晶中獎時)
+    if (amethystOnly && baseScore > 0) {
+        let double = finalAdded;
+        finalAdded += double;
         showPop(double, 'var(--purple)');
         addLog(`紫水晶獨佔翻倍 (+${double})`);
         await new Promise(r => setTimeout(r, 500));
     }
 
-    userData.total_points += spinTotal;
+    userData.total_points += finalAdded;
     await syncData();
+    updateUI();
 }
 
 function showPop(val, color) {
