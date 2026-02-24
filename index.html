@@ -72,6 +72,28 @@
     </style>
 </head>
 <body>
+    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:40px; height:40px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; z-index:1000; box-shadow: 0 0 10px rgba(0,0,0,0.5);">?</div>
+
+<div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999; justify-content:center; align-items:center;">
+    <div class="panel" style="max-width:400px; border:2px solid var(--gold); position:relative;" onclick="event.stopPropagation()">
+        <h3 style="color:var(--gold); text-align:center;">💎 寶石出線規則</h3>
+        <table style="width:100%; text-align:left; border-collapse:collapse; font-size:0.9rem;">
+            <tr style="border-bottom:1px solid #444;"><th>寶石</th><th>機率</th><th>3連分</th><th>5連大獎</th></tr>
+            <tr><td>💎 鑽石</td><td>8%</td><td>100</td><td>300</td></tr>
+            <tr><td>🔮 紫水晶</td><td>22%</td><td>25</td><td>50</td></tr>
+            <tr><td>♦️ 尖晶石</td><td>15%</td><td>10</td><td>20</td></tr>
+            <tr><td>💧 天青石</td><td>15%</td><td>10</td><td>20</td></tr>
+            <tr><td>⚪ 珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
+        </table>
+        <ul style="font-size:0.8rem; color:#ccc; margin-top:15px; padding-left:20px;">
+            <li><b>疊加計分：</b>4連線算2次3連；5連線算3次3連+1次大獎。</li>
+            <li><b>紫水晶：</b>全畫面只有它中獎時，分數 x 2。</li>
+            <li><b>尖晶石：</b>每組連線額外提供 10% 總分加成。</li>
+            <li><b>天青石：</b>每組連線額外送 1 次轉動機會。</li>
+        </ul>
+        <button onclick="toggleRules()" style="width:100%; margin-top:10px;">關閉說明</button>
+    </div>
+</div>
     <div id="login-screen" class="auth-box">
         <h2 style="color:var(--gold);">💎 寶石拉霸：精確計分版</h2>
         <input type="text" id="user-in" placeholder="帳號" style="padding:10px; margin:10px;"><br>
@@ -112,6 +134,10 @@
     </div>
 
 <script>
+    function toggleRules() {
+    const modal = document.getElementById('rule-modal');
+    modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'flex' : 'none';
+}
 const SB_URL = "https://knasaqqsqofcskazalwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYXNhcXFzcW9mY3NrYXphbHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTcxNTksImV4cCI6MjA4NzQ5MzE1OX0.TxpnxsEGd6L2aBfHn2FttPFXtMyk3VeM44IgyzheTpU";
 const _sb = supabase.createClient(SB_URL, SB_KEY);
