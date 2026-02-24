@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 資源存取優化版</title>
+    <title>寶石拉霸機 - 規則強化版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --darkblue: #2b57ff; --bg: #121212; }
+        :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --blue: #2b57ff; --bg: #121212; }
         body { background: var(--bg); color: white; font-family: 'Microsoft JhengHei', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
         .auth-box { background: #222; padding: 40px; border-radius: 15px; border: 2px solid var(--gold); text-align: center; margin-top: 50px; }
         #game-area { display: none; width: 1150px; grid-template-columns: 300px 1fr 280px; gap: 25px; }
@@ -14,6 +14,18 @@
         #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
         .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; overflow: hidden; }
         .cell img { width: 85% !important; height: 85% !important; object-fit: contain !important; display: block; }
+        
+        /* 規則視窗排版優化 */
+        #rule-modal .panel { max-width: 500px; max-height: 85vh; overflow-y: auto; line-height: 1.6; }
+        .rule-table { width: 100%; border-collapse: collapse; margin: 15px 0; background: #222; border-radius: 8px; overflow: hidden; }
+        .rule-table th { background: #333; color: var(--gold); padding: 10px; font-size: 0.9rem; }
+        .rule-table td { padding: 10px; border-bottom: 1px solid #444; text-align: center; }
+        .effect-list { text-align: left; padding: 0 10px; }
+        .effect-item { margin-bottom: 12px; border-bottom: 1px dashed #444; padding-bottom: 8px; }
+        .effect-item b { color: var(--gold); }
+        .txt-cyan { color: var(--cyan); } .txt-purple { color: var(--purple); }
+        .txt-red { color: var(--red); } .txt-blue { color: var(--blue); }
+
         .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 40%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 999; text-shadow: 0 0 30px #000; pointer-events: none; white-space: nowrap; }
         @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
         @media (max-width: 1100px) {
@@ -32,20 +44,38 @@
 </head>
 <body>
 
-    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000;">?</div>
+    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000; box-shadow: 0 0 10px rgba(255,215,0,0.5);">?</div>
 
-    <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; padding:20px;">
-        <div class="panel" style="max-width:450px; border:2px solid var(--gold);" onclick="event.stopPropagation()">
-            <h3 style="color:var(--gold); text-align:center;">💎 規則表</h3>
-            <table style="width:100%; text-align:center; border-collapse:collapse;">
-                <tr style="color:var(--gold); border-bottom:1px solid #555;"><th>寶石</th><th>3連</th><th>4連</th><th>5連</th></tr>
-                <tr><td class="txt-cyan">鑽石 (10%)</td><td>200</td><td>300</td><td>600</td></tr>
-                <tr><td class="txt-purple">紫水晶 (22%)</td><td>25</td><td>45</td><td>75</td></tr>
-                <tr><td class="txt-red">尖晶石 (17%)</td><td>10</td><td>20</td><td>40</td></tr>
-                <tr><td class="txt-blue">天青石 (17%)</td><td>10</td><td>20</td><td>40</td></tr>
-                <tr><td class="txt-white">珍珠 (34%)</td><td>20</td><td>30</td><td>40</td></tr>
+    <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; padding:20px;">
+        <div class="panel" style="border:2px solid var(--gold);" onclick="event.stopPropagation()">
+            <h2 style="color:var(--gold); text-align:center; margin-top:0;">💎 遊戲規則與倍率</h2>
+            
+            <table class="rule-table">
+                <tr><th>寶石種類</th><th>3連</th><th>4連</th><th>5連</th></tr>
+                <tr><td class="txt-cyan">鑽石</td><td>200</td><td>300</td><td>600</td></tr>
+                <tr><td class="txt-purple">紫水晶</td><td>25</td><td>45</td><td>75</td></tr>
+                <tr><td class="txt-red">尖晶石</td><td>10</td><td>20</td><td>40</td></tr>
+                <tr><td class="txt-blue">天青石</td><td>10</td><td>20</td><td>40</td></tr>
+                <tr><td>珍珠</td><td>20</td><td>30</td><td>40</td></tr>
             </table>
-            <button onclick="toggleRules()" style="width:100%; margin-top:15px;">關閉</button>
+
+            <h3 style="color:var(--gold); border-left:4px solid var(--gold); padding-left:10px;">✨ 特殊效果說明</h3>
+            <div class="effect-list">
+                <div class="effect-item">
+                    <b>💧 天青石：</b>任何形式的連線達成，額外獲得 <b>+1 次轉動機會</b>。
+                </div>
+                <div class="effect-item">
+                    <b>♦️ 尖晶石：</b>中獎時，總分額外加成。每多一組中獎連線，總得分 <b>+10%</b>。
+                </div>
+                <div class="effect-item">
+                    <b>🔮 紫水晶：</b>若當次旋轉「僅有」紫水晶達成連線，該次總得分 <b>直接翻倍 (x2)</b>。
+                </div>
+                <div class="effect-item">
+                    <b>📏 連線規則：</b>橫向連線依長度計分（取最高連線，不重複計算）；縱向與斜向固定僅計算 <b>3連線</b>。
+                </div>
+            </div>
+
+            <button onclick="toggleRules()" style="width:100%; margin-top:10px; font-size:1.1rem;">我了解了</button>
         </div>
     </div>
 
@@ -92,6 +122,8 @@
     </div>
 
 <script>
+// 此處保留你目前的所有 JavaScript (SB_URL, SYMBOLS, analyzeGrid, calculateScore 等)
+// 請將你原本 SYMBOLS 中的圖片網址再次貼入即可。
 const SB_URL = "https://knasaqqsqofcskazalwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYXNhcXFzcW9mY3NrYXphbHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTcxNTksImV4cCI6MjA4NzQ5MzE1OX0.TxpnxsEGd6L2aBfHn2FttPFXtMyk3VeM44IgyzheTpU";
 const _sb = supabase.createClient(SB_URL, SB_KEY);
@@ -149,20 +181,10 @@ function initGrid() {
     }
 }
 
-/**
- * 🎨 優化後的渲染函數：增加 crossOrigin 並微調加載邏輯
- */
 function renderCell(idx, symbol) {
     const cell = document.getElementById(`c-${idx}`);
-    // 直接放入圖片，只有在明確加載失敗時才透過 onerror 顯示 Emoji
     if (symbol.img && symbol.img.includes("http")) {
-        cell.innerHTML = `
-            <img src="${symbol.img}" 
-                 crossorigin="anonymous" 
-                 onerror="this.style.display='none'; this.nextSibling.style.display='block';" 
-                 alt="${symbol.label}">
-            <span style="display:none; color:${symbol.color}; font-size:2.5rem;">${symbol.name}</span>
-        `;
+        cell.innerHTML = `<img src="${symbol.img}" crossorigin="anonymous" onerror="this.style.display='none'; this.nextSibling.style.display='block';" alt="${symbol.label}"><span style="display:none; color:${symbol.color}; font-size:2.5rem;">${symbol.name}</span>`;
     } else {
         cell.innerHTML = `<span style="color:${symbol.color}; font-size:2.5rem;">${symbol.name}</span>`;
     }
@@ -171,24 +193,16 @@ function renderCell(idx, symbol) {
 async function processSpin() {
     if(isBusy) return;
     if(!isFirstSpinToday && userData.spins <= 0 && userData.extra_spins <= 0) return alert("次數不足！");
-    
     isBusy = true;
     const btn = document.getElementById('spin-btn');
-    btn.disabled = true;
-    btn.innerText = "旋轉中...";
-
+    btn.disabled = true; btn.innerText = "旋轉中...";
     document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
-    
     const gridEl = document.getElementById('slot-grid');
     gridEl.classList.add('shaking');
-    const interval = setInterval(() => {
-        for(let i=0; i<15; i++) renderCell(i, SYMBOLS[Math.floor(Math.random()*5)]);
-    }, 80);
-
+    const interval = setInterval(() => { for(let i=0; i<15; i++) renderCell(i, SYMBOLS[Math.floor(Math.random()*5)]); }, 80);
     await new Promise(r => setTimeout(r, 1200));
     clearInterval(interval);
     gridEl.classList.remove('shaking');
-
     let winMatches = [], finalGrid = [];
     while(true) {
         finalGrid = Array.from({length: 15}, () => {
@@ -199,13 +213,10 @@ async function processSpin() {
         winMatches = analyzeGrid(finalGrid);
         if (!isFirstSpinToday || winMatches.length > 0) break;
     }
-
     if(isFirstSpinToday) { isFirstSpinToday = false; document.getElementById('guarantee-msg').style.visibility = 'hidden'; }
     else { if(userData.extra_spins > 0) userData.extra_spins--; else userData.spins--; }
-
     for(let i=0; i<15; i++) renderCell(i, finalGrid[i]);
     await calculateScore(finalGrid, winMatches);
-
     isBusy = false; btn.disabled = false; btn.innerText = "🎰 開始轉動";
     updateUI();
 }
@@ -217,90 +228,67 @@ function analyzeGrid(grid) {
         const row = [start, start+1, start+2, start+3, start+4];
         const ids = row.map(idx => grid[idx].id);
         let foundRowWin = false;
-
         if (ids[0]===ids[1] && ids[1]===ids[2] && ids[2]===ids[3] && ids[3]===ids[4]) {
-            const sym = grid[row[0]];
-            wins.push({ pts: sym.p5, id: sym.id, cells: row, label: sym.label, count: 5 });
+            const sym = grid[row[0]]; wins.push({ pts: sym.p5, id: sym.id, cells: row, label: sym.label, count: 5 });
             foundRowWin = true;
         } 
         if (!foundRowWin) {
             for (let i = 0; i <= 1; i++) {
                 if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2] && ids[i+2]===ids[i+3]) {
-                    const sym = grid[row[i]];
-                    wins.push({ pts: sym.p4, id: sym.id, cells: row.slice(i, i+4), label: sym.label, count: 4 });
-                    foundRowWin = true; 
-                    break;
+                    const sym = grid[row[i]]; wins.push({ pts: sym.p4, id: sym.id, cells: row.slice(i, i+4), label: sym.label, count: 4 });
+                    foundRowWin = true; break;
                 }
             }
         }
         if (!foundRowWin) {
             for (let i = 0; i <= 2; i++) {
                 if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2]) {
-                    const sym = grid[row[i]];
-                    wins.push({ pts: sym.p3, id: sym.id, cells: row.slice(i, i+3), label: sym.label, count: 3 });
-                    foundRowWin = true;
-                    break;
+                    const sym = grid[row[i]]; wins.push({ pts: sym.p3, id: sym.id, cells: row.slice(i, i+3), label: sym.label, count: 3 });
+                    foundRowWin = true; break;
                 }
             }
         }
     });
-
     for (let c = 0; c < 5; c++) {
-        if (grid[c].id === grid[c+5].id && grid[c].id === grid[c+10].id) {
-            wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+5, c+10], label: grid[c].label, count: 3 });
-        }
+        if (grid[c].id === grid[c+5].id && grid[c].id === grid[c+10].id) wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+5, c+10], label: grid[c].label, count: 3 });
     }
     for (let c = 0; c <= 2; c++) {
-        if (grid[c].id === grid[c+6].id && grid[c].id === grid[c+12].id) {
-            wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+6, c+12], label: grid[c].label, count: 3 });
-        }
+        if (grid[c].id === grid[c+6].id && grid[c].id === grid[c+12].id) wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+6, c+12], label: grid[c].label, count: 3 });
         let tr = c + 2;
-        if (grid[tr].id === grid[tr+4].id && grid[tr].id === grid[tr+8].id) {
-            wins.push({ pts: grid[tr].p3, id: grid[tr].id, cells: [tr, tr+4, tr+8], label: grid[tr].label, count: 3 });
-        }
+        if (grid[tr].id === grid[tr+4].id && grid[tr].id === grid[tr+8].id) wins.push({ pts: grid[tr].p3, id: grid[tr].id, cells: [tr, tr+4, tr+8], label: grid[tr].label, count: 3 });
     }
     return wins;
 }
 
 async function calculateScore(grid, wins) {
-    let baseScore = 0;
-    let spinelCount = 0;
+    let baseScore = 0, spinelCount = 0;
     const amethystOnly = wins.length > 0 && wins.every(w => w.id === 1);
-    
     for (const win of wins) {
         win.cells.forEach(idx => document.getElementById(`c-${idx}`).classList.add('winning-cell'));
-        if(win.id === 3) { userData.extra_spins++; }
-        if(win.id === 2) { spinelCount++; }
+        if(win.id === 3) userData.extra_spins++;
+        if(win.id === 2) spinelCount++;
         baseScore += win.pts;
         showPop(win.pts, SYMBOLS[win.id].color);
         addLog(`${win.label}${win.count}連 (+${win.pts})`);
         await new Promise(r => setTimeout(r, 600));
     }
-
     let finalAdded = baseScore;
     if (spinelCount > 0 && baseScore > 0) {
         let bonus = Math.round(baseScore * 0.1 * wins.length);
-        finalAdded += bonus;
-        showPop(bonus, 'var(--red)');
-        addLog(`尖晶石加成 (+${bonus})`);
+        finalAdded += bonus; showPop(bonus, 'var(--red)'); addLog(`尖晶石加成 (+${bonus})`);
         await new Promise(r => setTimeout(r, 500));
     }
     if (amethystOnly && baseScore > 0) {
         let double = finalAdded;
-        finalAdded += double;
-        showPop(double, 'var(--purple)');
-        addLog(`紫水晶獨佔翻倍 (+${double})`);
+        finalAdded += double; showPop(double, 'var(--purple)'); addLog(`紫水晶獨佔翻倍 (+${double})`);
         await new Promise(r => setTimeout(r, 500));
     }
-    userData.total_points += finalAdded;
-    await syncData();
-    updateUI();
+    userData.total_points += finalAdded; await syncData(); updateUI();
 }
 
 function showPop(val, color) {
     const e = document.createElement('div'); e.className = 'score-pop'; e.style.color = color; e.innerText = `+${val}`;
-    document.getElementById('slot-grid').appendChild(e);
-    setTimeout(() => e.remove(), 1500);
+    document.getElementById('slot-grid').appendChild(e); setTimeout(() => e.remove(), 1500);
 }
 
 function updateUI() {
@@ -319,8 +307,7 @@ async function addMission(type) {
     const enc = btoa(encodeURIComponent(val));
     await _sb.from('missions').insert([{ username: userData.username, type, encrypted: enc, created_at: new Date().toISOString() }]);
     if(type === 'small') userData.spins += 1; else userData.spins += 5;
-    document.getElementById('m-content').value = '';
-    syncData(); updateUI(); loadMissions();
+    document.getElementById('m-content').value = ''; syncData(); updateUI(); loadMissions();
 }
 
 async function loadMissions() {
