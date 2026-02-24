@@ -3,40 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 終極校正版</title>
+    <title>寶石拉霸機 - 萬全連線版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --darkblue: #2b57ff; --bg: #121212; }
         body { background: var(--bg); color: white; font-family: 'Microsoft JhengHei', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
-        
         .auth-box { background: #222; padding: 40px; border-radius: 15px; border: 2px solid var(--gold); text-align: center; margin-top: 50px; }
-        
-        /* 電腦版主配置 */
         #game-area { display: none; width: 1150px; grid-template-columns: 300px 1fr 280px; gap: 25px; }
         .panel { background: rgba(30,30,30,0.9); padding: 20px; border-radius: 12px; border: 1px solid #444; }
-
-        /* 拉霸格子與圖片基礎 */
         #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
         .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; }
         .cell img { width: 85% !important; height: 85% !important; object-fit: contain; }
-        
-        /* 跳分特效修正 */
         .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 40%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 999; text-shadow: 0 0 30px #000; pointer-events: none; white-space: nowrap; }
         @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
-
-        /* 手機 RWD 強制覆蓋 */
         @media (max-width: 1100px) {
             #game-area { display: none; flex-direction: column !important; width: 100vw !important; padding: 10px 0 !important; gap: 15px !important; }
-            .panel { width: 92vw !important; margin: 0 auto !important; box-sizing: border-box !important; }
+            .panel { width: 92vw !important; margin: 0 auto !important; }
             #slot-grid { grid-template-columns: repeat(5, 17vw) !important; width: 92vw !important; padding: 10px !important; gap: 1.5vw !important; margin: 0 auto !important; }
             .cell { width: 16vw !important; height: 16vw !important; }
             .score-pop { font-size: 3rem !important; }
         }
-
         .shaking { animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
         .winning-cell { border-color: white !important; box-shadow: 0 0 20px white; background: #333 !important; z-index: 5; }
-        
         button { padding: 12px 20px; background: var(--gold); border: none; cursor: pointer; font-weight: bold; border-radius: 6px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         table td { padding: 8px; border-bottom: 1px solid #333; text-align: center; }
@@ -45,24 +34,24 @@
 </head>
 <body>
 
-    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000; box-shadow: 0 0 10px rgba(255,215,0,0.5);">?</div>
+    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000;">?</div>
 
     <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; padding:20px;">
         <div class="panel" style="max-width:450px; border:2px solid var(--gold);" onclick="event.stopPropagation()">
             <h3 style="color:var(--gold); text-align:center;">💎 寶石規則說明</h3>
             <table>
                 <tr style="color:var(--gold);"><th>寶石種類</th><th>機率</th><th>3連</th><th>5連</th></tr>
-                <tr><td class="txt-cyan">鑽石</td><td>8%</td><td>100</td><td>300</td></tr>
-                <tr><td class="txt-purple">紫水晶</td><td>22%</td><td>25</td><td>50</td></tr>
-                <tr><td class="txt-red">尖晶石</td><td>15%</td><td>10</td><td>20</td></tr>
-                <tr><td class="txt-blue">天青石</td><td>15%</td><td>10</td><td>20</td></tr>
-                <tr><td class="txt-white">珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
+                <tr><td class="txt-cyan">淡藍色的鑽石</td><td>8%</td><td>100</td><td>300</td></tr>
+                <tr><td class="txt-purple">紫色的紫水晶</td><td>22%</td><td>25</td><td>50</td></tr>
+                <tr><td class="txt-red">紅色的尖晶石</td><td>15%</td><td>10</td><td>20</td></tr>
+                <tr><td class="txt-blue">深藍色的天青石</td><td>15%</td><td>10</td><td>20</td></tr>
+                <tr><td class="txt-white">白色的珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
             </table>
             <div style="font-size:0.85rem; color:#bbb; margin-top:15px; line-height:1.6;">
-                • <b>疊加計分：</b>4個寶石相連算2組3連；5個寶石相連算3組3連 + 5連大獎。<br>
-                • <b class="txt-purple">紫水晶：</b>盤面「僅有」此寶石連線時，分數翻倍。<br>
-                • <b class="txt-red">尖晶石：</b>每組連線額外獲得10%分數。<br>
-                • <b class="txt-blue">天青石：</b>每組連線額外獲得 1 次轉動機會。
+                • <b>疊加計分：</b>4連算2組3連；5連算3組3連 + 5連大獎。<br>
+                • <b class="txt-purple">紫色的紫水晶：</b>盤面「僅有」此寶石中獎時，分數翻倍。<br>
+                • <b class="txt-red">紅色的尖晶石：</b>每組連線額外加成總分 10%。<br>
+                • <b class="txt-blue">深藍色的天青石：</b>每組連線額外獲得 1 次轉動機會。
             </div>
             <button onclick="toggleRules()" style="width:100%; margin-top:15px;">關閉</button>
         </div>
@@ -114,12 +103,11 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const _sb = supabase.createClient(SB_URL, SB_KEY);
 
 const SYMBOLS = [
-    /* 這裡填入你的圖片網址 */
-    { id: 0, name: '💎', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/diamond.PNG', prob: 0.08, p3: 100, p5: 300, label: '鑽石', color: '#00f2ff' },
-    { id: 1, name: '🔮', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Amethyst.PNG', prob: 0.22, p3: 25,  p5: 50,  label: '紫水晶', color: '#d084ff' },
-    { id: 2, name: '♦️', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Spinel.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '尖晶石', color: '#ff4d4d' },
-    { id: 3, name: '💧', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Celestite.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '天青石', color: '#2b57ff' },
-    { id: 4, name: '⚪', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG', prob: 0.40, p3: 20,  p5: 30,  label: '珍珠', color: '#eee' }
+    { id: 0, name: '💎', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/diamond.PNG', prob: 0.08, p3: 100, p5: 300, label: '淡藍色的鑽石', color: '#00f2ff' },
+    { id: 1, name: '🔮', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Amethyst.PNG', prob: 0.22, p3: 25,  p5: 50,  label: '紫色的紫水晶', color: '#d084ff' },
+    { id: 2, name: '♦️', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Spinel.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '紅色的尖晶石', color: '#ff4d4d' },
+    { id: 3, name: '💧', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Celestite.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '深藍色的天青石', color: '#2b57ff' },
+    { id: 4, name: '⚪', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG', prob: 0.40, p3: 20,  p5: 30,  label: '白色的珍珠', color: '#eee' }
 ];
 
 let userData = null; let isBusy = false; let isFirstSpinToday = false;
@@ -187,9 +175,7 @@ async function processSpin() {
     const gridEl = document.getElementById('slot-grid');
     gridEl.classList.add('shaking');
     const interval = setInterval(() => {
-        for(let i=0; i<15; i++) {
-            renderCell(i, SYMBOLS[Math.floor(Math.random()*5)]);
-        }
+        for(let i=0; i<15; i++) renderCell(i, SYMBOLS[Math.floor(Math.random()*5)]);
     }, 80);
 
     await new Promise(r => setTimeout(r, 1200));
@@ -217,53 +203,44 @@ async function processSpin() {
 }
 
 function analyzeGrid(grid) {
-    const paths = [];
-    
-    // 1. 橫線 (3條，每條5格)
-    for(let r=0; r<3; r++) paths.push([r*5, r*5+1, r*5+2, r*5+3, r*5+4]);
-    
-    // 2. 直線 (5條，每條3格)
-    for(let c=0; c<5; c++) paths.push([c, c+5, c+10]);
-    
-    // 3. 長斜線 (5格大對角線 - 兩條)
-    paths.push([0, 6, 12, 8, 4]); // V型或倒V型取決於索引，這是標準拉霸大斜線
-    paths.push([0, 6, 12, 13, 14]); // 階梯型
-    
-    // 4. 正確的對角線路徑 (補齊所有 3格 與 5格 斜線)
-    paths.push([0, 6, 12]);       // 左上到右下 (3連)
-    paths.push([4, 8, 12]);       // 右上到左下 (3連)
-    paths.push([2, 6, 10]);       // 頂部中到左下 (3連)
-    paths.push([2, 8, 14]);       // 頂部中到右下 (3連)
-    paths.push([5, 11, 12]);      // 錯誤修正：加入更多拉霸常用路徑
-    
-    // 5. 補上最標準的五連對角線 (左上到右下 & 左下到右上)
-    // 雖然盤面是 5x3，但我們會掃描所有符合邏輯的相鄰對角點
-    paths.push([10, 6, 2, 8, 14]); // M型斜線
-    paths.push([0, 6, 12, 8, 4]);  // W型斜線
+    // 這裡是 15 線拉霸機的黃金中獎線路定義 (5x3盤面)
+    const lines = [
+        [5, 6, 7, 8, 9],    // 橫 1 (中)
+        [0, 1, 2, 3, 4],    // 橫 2 (上)
+        [10, 11, 12, 13, 14], // 橫 3 (下)
+        [0, 6, 12, 8, 4],   // V型 (正)
+        [10, 6, 2, 8, 14],  // V型 (倒)
+        [0, 1, 7, 13, 14],  // 階梯線 1
+        [10, 11, 7, 3, 4],  // 階梯線 2
+        [5, 1, 2, 3, 9],    // 凸型線
+        [5, 11, 12, 13, 9], // 凹型線
+        [0, 6, 7, 8, 4],    // 淺V 1
+        [10, 6, 7, 8, 14],  // 淺V 2
+        [5, 1, 7, 13, 9],   // 鋸齒線 1
+        [5, 11, 7, 3, 9],   // 鋸齒線 2
+        [0, 11, 2, 13, 4],  // 大波浪 1
+        [10, 1, 12, 3, 14]  // 大波浪 2
+    ];
 
     const wins = [];
-    paths.forEach(p => {
-        // 檢查該路徑中是否有連續 3 格相同
-        for (let start = 0; start <= p.length - 3; start++) {
-            const sub = p.slice(start, start + 3);
-            if (sub.every(i => grid[i].id === grid[sub[0]].id)) {
-                wins.push({ 
-                    pts: grid[sub[0]].p3, 
-                    id: grid[sub[0]].id, 
-                    cells: sub, 
-                    label: grid[sub[0]].label 
-                });
-            }
+    lines.forEach(path => {
+        // 每條線檢查前 3 格是否相同
+        let count = 1;
+        let matchId = grid[path[0]].id;
+        for(let i=1; i<path.length; i++) {
+            if(grid[path[i]].id === matchId) count++;
+            else break;
         }
-        // 檢查該路徑是否為 5 格全同 (大獎)
-        if (p.length === 5 && p.every(i => grid[i].id === grid[p[0]].id)) {
-            wins.push({ 
-                pts: grid[p[0]].p5, 
-                id: grid[p[0]].id, 
-                cells: p, 
-                label: grid[p[0]].label, 
-                isBig: true 
-            });
+
+        if(count >= 3) {
+            const comboCells = path.slice(0, count);
+            if(count === 5) {
+                wins.push({ pts: grid[path[0]].p5, id: matchId, cells: comboCells, label: grid[path[0]].label, isBig: true });
+            } else {
+                // 4連也會被拆解成 3連計分
+                wins.push({ pts: grid[path[0]].p3, id: matchId, cells: path.slice(0, 3), label: grid[path[0]].label });
+                if(count === 4) wins.push({ pts: grid[path[0]].p3, id: matchId, cells: path.slice(1, 4), label: grid[path[0]].label });
+            }
         }
     });
     return wins;
@@ -337,7 +314,6 @@ function handleWithdraw() {
 }
 
 function addLog(m) { const l = document.getElementById('game-log'); l.innerHTML = `<div>> ${m}</div>` + l.innerHTML; }
-
 window.addEventListener('resize', () => { if(userData) updateAreaLayout(); });
 </script>
 </body>
