@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 純粹連線校正版</title>
+    <title>寶石拉霸機 - 流程強化穩定版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --darkblue: #2b57ff; --bg: #121212; }
@@ -14,8 +14,11 @@
         #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
         .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; }
         .cell img { width: 85% !important; height: 85% !important; object-fit: contain; }
+        
+        /* 跳分特效 */
         .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 40%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 999; text-shadow: 0 0 30px #000; pointer-events: none; white-space: nowrap; }
         @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
+        
         @media (max-width: 1100px) {
             #game-area { display: none; flex-direction: column !important; width: 100vw !important; padding: 10px 0 !important; gap: 15px !important; }
             .panel { width: 92vw !important; margin: 0 auto !important; }
@@ -23,8 +26,13 @@
             .cell { width: 16vw !important; height: 16vw !important; }
             .score-pop { font-size: 3rem !important; }
         }
+
+        .shaking { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
         .winning-cell { border-color: white !important; box-shadow: 0 0 20px white; background: #333 !important; z-index: 5; }
+        
         button { padding: 12px 20px; background: var(--gold); border: none; cursor: pointer; font-weight: bold; border-radius: 6px; }
+        button:disabled { background: #555; cursor: not-allowed; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         table td { padding: 8px; border-bottom: 1px solid #333; text-align: center; }
         .txt-cyan { color: var(--cyan); } .txt-purple { color: var(--purple); } .txt-red { color: var(--red); } .txt-blue { color: var(--darkblue); } .txt-white { color: #fff; }
@@ -39,19 +47,12 @@
             <h3 style="color:var(--gold); text-align:center;">💎 寶石規則說明</h3>
             <table>
                 <tr style="color:var(--gold);"><th>寶石種類</th><th>機率</th><th>3連</th><th>5連</th></tr>
-                <tr><td class="txt-cyan">鑽石</td><td>8%</td><td>100</td><td>300</td></tr>
-                <tr><td class="txt-purple">紫水晶</td><td>22%</td><td>25</td><td>50</td></tr>
-                <tr><td class="txt-red">尖晶石</td><td>15%</td><td>10</td><td>20</td></tr>
-                <tr><td class="txt-blue">天青石</td><td>15%</td><td>10</td><td>20</td></tr>
-                <tr><td class="txt-white">珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
+                <tr><td class="txt-cyan">淡藍色的鑽石</td><td>8%</td><td>100</td><td>300</td></tr>
+                <tr><td class="txt-purple">紫色的紫水晶</td><td>22%</td><td>25</td><td>50</td></tr>
+                <tr><td class="txt-red">紅色的尖晶石</td><td>15%</td><td>10</td><td>20</td></tr>
+                <tr><td class="txt-blue">深藍色的天青石</td><td>15%</td><td>10</td><td>20</td></tr>
+                <tr><td class="txt-white">白色的珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
             </table>
-            <div style="font-size:0.85rem; color:#bbb; margin-top:15px; line-height:1.6;">
-                • <b>橫向：</b>3連、5連計分。<br>
-                • <b>縱向與斜向：</b>僅計 3連計分。<br>
-                • <b class="txt-purple">紫水晶：</b>盤面「僅有」此寶石中獎時，分數翻倍。<br>
-                • <b class="txt-red">尖晶石：</b>每組連線額外加成總分 10%。<br>
-                • <b class="txt-blue">天青石：</b>每組連線額外獲得 1 次轉動機會。
-            </div>
             <button onclick="toggleRules()" style="width:100%; margin-top:15px;">關閉</button>
         </div>
     </div>
@@ -102,11 +103,11 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const _sb = supabase.createClient(SB_URL, SB_KEY);
 
 const SYMBOLS = [
-    { id: 0, name: '💎', img: '', prob: 0.08, p3: 100, p5: 300, label: '鑽石', color: '#00f2ff' },
-    { id: 1, name: '🔮', img: '', prob: 0.22, p3: 25,  p5: 50,  label: '紫水晶', color: '#d084ff' },
-    { id: 2, name: '♦️', img: '', prob: 0.15, p3: 10,  p5: 20,  label: '尖晶石', color: '#ff4d4d' },
-    { id: 3, name: '💧', img: '', prob: 0.15, p3: 10,  p5: 20,  label: '天青石', color: '#2b57ff' },
-    { id: 4, name: '⚪', img: '', prob: 0.40, p3: 20,  p5: 30,  label: '珍珠', color: '#eee' }
+    { id: 0, name: '💎', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/diamond.PNG', prob: 0.08, p3: 100, p5: 300, label: '淡藍色的鑽石', color: '#00f2ff' },
+    { id: 1, name: '🔮', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Amethyst.PNG', prob: 0.22, p3: 25,  p5: 50,  label: '紫色的紫水晶', color: '#d084ff' },
+    { id: 2, name: '♦️', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Spinel.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '紅色的尖晶石', color: '#ff4d4d' },
+    { id: 3, name: '💧', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Celestite.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '深藍色的天青石', color: '#2b57ff' },
+    { id: 4, name: '⚪', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG', prob: 0.40, p3: 20,  p5: 30,  label: '白色的珍珠', color: '#eee' }
 ];
 
 let userData = null; let isBusy = false; let isFirstSpinToday = false;
@@ -131,8 +132,7 @@ async function handleLogin() {
         }
         checkDaily();
         document.getElementById('login-screen').style.display = 'none';
-        updateAreaLayout();
-        initGrid(); loadMissions(); updateUI();
+        updateAreaLayout(); initGrid(); loadMissions(); updateUI();
     } catch (e) { console.error(e); }
 }
 
@@ -164,12 +164,20 @@ function renderCell(idx, symbol) {
     }
 }
 
+// --- 核心流程：加入嚴格鎖定 ---
 async function processSpin() {
     if(isBusy) return;
     if(!isFirstSpinToday && userData.spins <= 0 && userData.extra_spins <= 0) return alert("次數不足！");
+    
     isBusy = true;
-    document.getElementById('spin-btn').disabled = true;
-    document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
+    const btn = document.getElementById('spin-btn');
+    btn.disabled = true;
+    btn.innerText = "結算中...";
+
+    document.querySelectorAll('.cell').forEach(c => {
+        c.classList.remove('winning-cell');
+        c.style.background = "";
+    });
     
     const gridEl = document.getElementById('slot-grid');
     gridEl.classList.add('shaking');
@@ -192,37 +200,33 @@ async function processSpin() {
         if (!isFirstSpinToday || winMatches.length > 0) break;
     }
 
-    if(isFirstSpinToday) { isFirstSpinToday = false; document.getElementById('guarantee-msg').style.visibility = 'hidden'; addLog("⭐ 今日首轉保底中獎！"); }
-    else { if(userData.extra_spins > 0) userData.extra_spins--; else userData.spins--; }
+    if(isFirstSpinToday) { 
+        isFirstSpinToday = false; 
+        document.getElementById('guarantee-msg').style.visibility = 'hidden'; 
+    } else { 
+        if(userData.extra_spins > 0) userData.extra_spins--; else userData.spins--; 
+    }
 
     for(let i=0; i<15; i++) renderCell(i, finalGrid[i]);
+
+    // 等待結算動畫完全結束
     await calculateScore(finalGrid, winMatches);
+
     isBusy = false;
-    document.getElementById('spin-btn').disabled = false;
+    btn.disabled = false;
+    btn.innerText = "🎰 開始轉動";
+    updateUI();
 }
 
-/**
- * 徹底修正後的掃描邏輯
- * 橫向：3連、5連
- * 直向：3連
- * 斜向：標準 3x3 對角線 (159, 753)
- */
+// --- 掃描規則 (絕對不變) ---
 function analyzeGrid(grid) {
     const wins = [];
-
-    // --- 1. 橫向連線路徑 (5格一組) ---
-    const rowPaths = [
-        [0, 1, 2, 3, 4],    // 上橫
-        [5, 6, 7, 8, 9],    // 中橫
-        [10, 11, 12, 13, 14] // 下橫
-    ];
+    const rowPaths = [[0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14]];
     rowPaths.forEach(path => {
         const id = grid[path[0]].id;
-        // 檢查 5 連
         if (path.every(idx => grid[idx].id === id)) {
             wins.push({ pts: grid[path[0]].p5, id: id, cells: path, label: grid[path[0]].label, isBig: true });
         } else {
-            // 檢查橫向 3 連 (每排有三種可能：012, 123, 234)
             for (let i = 0; i <= 2; i++) {
                 if (grid[path[i]].id === id && grid[path[i+1]].id === id && grid[path[i+2]].id === id) {
                     wins.push({ pts: grid[path[0]].p3, id: id, cells: [path[i], path[i+1], path[i+2]], label: grid[path[0]].label });
@@ -230,50 +234,48 @@ function analyzeGrid(grid) {
             }
         }
     });
-
-    // --- 2. 縱向連線路徑 (3格一組) ---
     for (let c = 0; c < 5; c++) {
         if (grid[c].id === grid[c+5].id && grid[c].id === grid[c+10].id) {
             wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+5, c+10], label: grid[c].label });
         }
     }
-
-    // --- 3. 標準對角線路徑 (159 與 753) ---
-    // 在 5x3 中，可形成九宮格的起始點有第 0, 1, 2 列
     for (let c = 0; c <= 2; c++) {
-        // 斜下 (左上到右下: 1-5-9 型)
         if (grid[c].id === grid[c+6].id && grid[c].id === grid[c+12].id) {
             wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+6, c+12], label: grid[c].label });
         }
-        // 斜上 (右上到左下: 7-5-3 型)
         let topRight = c + 2;
         if (grid[topRight].id === grid[topRight+4].id && grid[topRight].id === grid[topRight+8].id) {
             wins.push({ pts: grid[topRight].p3, id: grid[topRight].id, cells: [topRight, topRight+4, topRight+8], label: grid[topRight].label });
         }
     }
-
     return wins;
 }
 
 async function calculateScore(grid, wins) {
     let spinTotal = 0; let spinelBonus = 0;
     const onlyAmethyst = wins.length > 0 && wins.every(w => w.id === 1);
+    
     for (const win of wins) {
         let s = win.pts;
         win.cells.forEach(idx => document.getElementById(`c-${idx}`).classList.add('winning-cell'));
         if(win.id === 1 && onlyAmethyst) s *= 2;
         if(win.id === 2) spinelBonus++;
-        if(win.id === 3) userData.extra_spins++;
+        if(win.id === 3) { userData.extra_spins++; updateUI(); }
         spinTotal += s;
         showPop(s, SYMBOLS[win.id].color);
         addLog(`${win.label}${win.isBig?'大獎':'連線'} (+${s})`);
-        await new Promise(r => setTimeout(r, 450));
+        await new Promise(r => setTimeout(r, 600)); // 每個連線結算動畫等待
     }
+
     if(spinelBonus > 0 && spinTotal > 0) {
         let b = Math.round(spinTotal * 0.1 * spinelBonus);
-        spinTotal += b; showPop(b, 'var(--red)'); addLog(`紅色的尖晶石加成 (+${b})`);
+        spinTotal += b; showPop(b, 'var(--red)'); 
+        addLog(`紅色的尖晶石加成 (+${b})`);
+        await new Promise(r => setTimeout(r, 500));
     }
-    userData.total_points += spinTotal; syncData(); updateUI();
+
+    userData.total_points += spinTotal;
+    await syncData();
 }
 
 function showPop(val, color) {
