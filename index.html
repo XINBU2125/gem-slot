@@ -2,142 +2,110 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>寶石拉霸機 - 正確計分修正版</title>
+    <title>寶石拉霸機 - 終極完美版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --bg: #121212; }
         body { background: var(--bg); color: white; font-family: 'Microsoft JhengHei', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
+        
         .auth-box { background: #222; padding: 40px; border-radius: 15px; border: 2px solid var(--gold); text-align: center; margin-top: 50px; }
         #game-area { display: none; width: 1150px; grid-template-columns: 300px 1fr 280px; gap: 25px; }
-        .panel { background: rgba(30,30,30,0.8); padding: 20px; border-radius: 12px; border: 1px solid #444; }
+        .panel { background: rgba(30,30,30,0.9); padding: 20px; border-radius: 12px; border: 1px solid #444; }
+        
+        /* 手機適應性 (RWD) */
+        @media (max-width: 1100px) {
+            #game-area { display: flex; flex-direction: column; width: 95vw; align-items: center; }
+            .panel { width: 100%; box-sizing: border-box; }
+            #slot-grid { grid-template-columns: repeat(5, 17vw) !important; width: 92vw !important; gap: 1vw !important; padding: 10px !important; }
+            .cell { width: 16vw !important; height: 16vw !important; }
+            .score-pop { font-size: 3.5rem !important; }
+        }
+
         #slot-grid { display: grid; grid-template-columns: repeat(5, 95px); gap: 12px; background: #000; padding: 20px; border: 5px solid #444; border-radius: 20px; position: relative; }
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-2px, -1px) rotate(-1deg); }
-            40% { transform: translate(-3px, 0px) rotate(1deg); }
-            60% { transform: translate(3px, 2px) rotate(0deg); }
-            80% { transform: translate(1px, -1px) rotate(1deg); }
-            100% { transform: translate(-1px, 2px) rotate(-1deg); }
-        }
-        .shaking { animation: shake 0.1s infinite; }
-        .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; overflow: hidden; }
+        .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; }
         .cell img { width: 80%; height: 80%; object-fit: contain; }
-        .winning-cell { border-color: white !important; box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5); background: #333 !important; z-index: 5; }
-        .score-pop { position: absolute; font-weight: bold; font-size: 6rem; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 200; text-shadow: 0 0 30px #000, 0 0 15px #000; pointer-events: none; white-space: nowrap; }
-        @keyframes floatUpCentral { 
-            0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 
-            80% { opacity: 1; transform: translate(-50%, -60%) scale(1); } 
-            100% { opacity: 0; transform: translate(-50%, -100%) scale(0.8); } 
-        }
-        .date-group { margin-top: 15px; border-left: 3px solid var(--gold); padding-left: 10px; }
-        .date-header { font-weight: bold; color: var(--gold); font-size: 0.9rem; margin-bottom: 5px; }
-        .log-panel { grid-column: 1 / 4; height: 130px; background: #000; padding: 15px; overflow-y: auto; border-left: 5px solid var(--gold); border-radius: 8px; color: #ccc; font-size: 0.9rem; margin-top: 15px; }
+        
+        .shaking { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
+
+        .winning-cell { border-color: white !important; box-shadow: 0 0 20px white; background: #333 !important; z-index: 5; }
+        .score-pop { position: absolute; font-weight: bold; font-size: 6rem; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 200; text-shadow: 0 0 30px #000; pointer-events: none; }
+        @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -100%) scale(0.8); } }
+        
         button { padding: 12px 20px; background: var(--gold); border: none; cursor: pointer; font-weight: bold; border-radius: 6px; }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; }
-        .guarantee-tag { color: #ffeb3b; font-weight: bold; font-size: 0.8rem; background: rgba(255, 235, 59, 0.1); padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; display: inline-block; }
-        /* 行動裝置適應性優化 */
-@media (max-width: 1100px) {
-    #game-area {
-        display: flex; /* 改為彈性佈局 */
-        flex-direction: column; /* 改為由上至下排列 */
-        width: 95vw; /* 寬度佔螢幕 95% */
-        align-items: center;
-        gap: 15px;
-    }
-
-    .panel {
-        width: 100%; /* 側邊欄寬度改為全滿 */
-        box-sizing: border-box;
-    }
-
-    #slot-grid {
-        /* 縮小拉霸機以適應手機螢幕 */
-        grid-template-columns: repeat(5, 18vw); 
-        gap: 2vw;
-        padding: 10px;
-        width: 90vw;
-        justify-content: center;
-    }
-
-    .cell {
-        width: 16vw; 
-        height: 16vw;
-    }
-
-    .score-pop {
-        font-size: 3rem; /* 手機上分數縮小一點才不會擋住全部 */
-    }
-}
+        button:disabled { background: #444; color: #888; }
+        table th, table td { padding: 8px; border-bottom: 1px solid #333; }
     </style>
 </head>
 <body>
-    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:40px; height:40px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; z-index:1000; box-shadow: 0 0 10px rgba(0,0,0,0.5);">?</div>
 
-<div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999; justify-content:center; align-items:center;">
-    <div class="panel" style="max-width:400px; border:2px solid var(--gold); position:relative;" onclick="event.stopPropagation()">
-        <h3 style="color:var(--gold); text-align:center;">💎 寶石出線規則</h3>
-        <table style="width:100%; text-align:left; border-collapse:collapse; font-size:0.9rem;">
-            <tr style="border-bottom:1px solid #444;"><th>寶石</th><th>機率</th><th>3連分</th><th>5連大獎</th></tr>
-            <tr><td>💎 鑽石</td><td>8%</td><td>100</td><td>300</td></tr>
-            <tr><td>🔮 紫水晶</td><td>22%</td><td>25</td><td>50</td></tr>
-            <tr><td>♦️ 尖晶石</td><td>15%</td><td>10</td><td>20</td></tr>
-            <tr><td>💧 天青石</td><td>15%</td><td>10</td><td>20</td></tr>
-            <tr><td>⚪ 珍珠</td><td>40%</td><td>20</td><td>30</td></tr>
-        </table>
-        <ul style="font-size:0.8rem; color:#ccc; margin-top:15px; padding-left:20px;">
-            <li><b>疊加計分：</b>4連線算2次3連；5連線算3次3連+1次大獎。</li>
-            <li><b>紫水晶：</b>全畫面只有它中獎時，分數 x 2。</li>
-            <li><b>尖晶石：</b>每組連線額外提供 10% 總分加成。</li>
-            <li><b>天青石：</b>每組連線額外送 1 次轉動機會。</li>
-        </ul>
-        <button onclick="toggleRules()" style="width:100%; margin-top:10px;">關閉說明</button>
+    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000; box-shadow: 0 0 15px rgba(255,215,0,0.4);">?</div>
+
+    <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999; justify-content:center; align-items:center; padding:20px;">
+        <div class="panel" style="max-width:450px; border:2px solid var(--gold);" onclick="event.stopPropagation()">
+            <h3 style="color:var(--gold); text-align:center; margin-top:0;">💎 寶石規則說明</h3>
+            <table style="width:100%; text-align:center; border-collapse:collapse;">
+                <tr style="color:var(--gold);"><th>種類</th><th>機率</th><th>3連</th><th>5連</th></tr>
+                <tr><td>💎</td><td>8%</td><td>100</td><td>300</td></tr>
+                <tr><td>🔮</td><td>22%</td><td>25</td><td>50</td></tr>
+                <tr><td>♦️</td><td>15%</td><td>10</td><td>20</td></tr>
+                <tr><td>💧</td><td>15%</td><td>10</td><td>20</td></tr>
+                <tr><td>⚪</td><td>40%</td><td>20</td><td>30</td></tr>
+            </table>
+            <div style="font-size:0.85rem; color:#bbb; line-height:1.6; margin-top:15px;">
+                • <b>疊加計分：</b>4連算2組3連；5連算3組3連+大獎。<br>
+                • <b>紫水晶：</b>盤面「僅有」此寶石中獎時，分數翻倍。<br>
+                • <b>尖晶石：</b>每組連線額外加成總分 10%。<br>
+                • <b>天青石：</b>每組連線額外獲得 1 次轉動機會。
+            </div>
+            <button onclick="toggleRules()" style="width:100%; margin-top:15px;">我看懂了</button>
+        </div>
     </div>
-</div>
+
     <div id="login-screen" class="auth-box">
-        <h2 style="color:var(--gold);">💎 寶石拉霸：精確計分版</h2>
+        <h2 style="color:var(--gold);">💎 寶石拉霸機</h2>
         <input type="text" id="user-in" placeholder="帳號" style="padding:10px; margin:10px;"><br>
         <input type="password" id="pass-in" placeholder="密碼" style="padding:10px; margin:10px;"><br>
-        <button onclick="handleLogin()">進入遊戲</button>
+        <button onclick="handleLogin()">開始遊戲</button>
     </div>
+
     <div id="game-area">
         <div class="panel">
-            <h3>🎯 紀錄目標</h3>
-            <textarea id="m-content" placeholder="輸入內容..." style="width:90%; height:60px; background:#111; color:white; border:1px solid #444; padding:10px;"></textarea>
+            <h3>🎯 任務紀錄</h3>
+            <textarea id="m-content" placeholder="輸入事項..." style="width:90%; height:60px; background:#111; color:white; border:1px solid #444; padding:10px;"></textarea>
             <button onclick="addMission('small')" style="width:100%; margin-top:10px;">小目標 (+1轉)</button>
             <button onclick="addMission('big')" style="width:100%; margin-top:10px; background:#b8860b;">大成就 (+5轉)</button>
-            <hr>
+            <hr style="margin:20px 0; border:#333 1px solid;">
             <div id="mission-list" style="font-size: 0.85rem; height: 280px; overflow-y: auto;"></div>
         </div>
+
         <div style="text-align: center;">
-            <div id="guarantee-msg" class="guarantee-tag" style="visibility: hidden;">⭐ 今日首轉保底啟動</div>
-            <div style="margin-bottom:15px;">
-                <span style="color:#aaa;">目前總積分</span>
+            <div id="guarantee-msg" style="color:#ffeb3b; font-weight:bold; visibility:hidden;">⭐ 今日首轉：保底中獎模式</div>
+            <div style="margin-bottom:10px;">
+                <span style="color:#aaa;">總積分</span>
                 <div id="point-display" style="color:var(--gold); font-size: 3rem; font-weight:bold;">0</div>
             </div>
             <div id="slot-grid"></div>
-            <button id="spin-btn" onclick="processSpin()" style="margin-top:25px; font-size: 1.8rem; width: 100%; height: 70px;">🎰 開始轉動</button>
-            <button onclick="handleWithdraw()" style="background:#444; color:white; width: 100%; margin-top:15px;">提領分數</button>
+            <button id="spin-btn" onclick="processSpin()" style="margin-top:20px; font-size: 1.8rem; width: 100%; height: 70px;">🎰 開始轉動</button>
+            <button onclick="handleWithdraw()" style="background:#444; color:white; width: 100%; margin-top:10px;">提領分數</button>
         </div>
+
         <div class="panel">
-            <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:15px;">
-                <div>剩餘次數</div>
+            <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:10px;">
+                <div>剩餘轉動</div>
                 <div id="spin-count" style="font-size:2.5rem; font-weight:bold;">0</div>
             </div>
             <div style="background:#222; padding:15px; border-radius:10px; color:var(--cyan); border:1px solid var(--cyan);">
-                <div>額外轉動</div>
+                <div>額外機會</div>
                 <div id="extra-count" style="font-size:2.5rem; font-weight:bold;">0</div>
             </div>
-            <div onclick="showProfile()" style="cursor:pointer; color:var(--gold); margin-top:20px; text-align:center; border:1px solid var(--gold); padding:10px;">👤 檔案與經驗值</div>
         </div>
-        <div class="log-panel" id="game-log">> 遊戲載入成功</div>
+
+        <div class="panel" id="game-log" style="grid-column: 1 / 4; height: 100px; overflow-y: auto; font-size: 0.8rem; color:#888;">> 遊戲紀錄區...</div>
     </div>
 
 <script>
-    function toggleRules() {
-    const modal = document.getElementById('rule-modal');
-    modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'flex' : 'none';
-}
+// === Supabase 設定 (請保持原樣) ===
 const SB_URL = "https://knasaqqsqofcskazalwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYXNhcXFzcW9mY3NrYXphbHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTcxNTksImV4cCI6MjA4NzQ5MzE1OX0.TxpnxsEGd6L2aBfHn2FttPFXtMyk3VeM44IgyzheTpU";
 const _sb = supabase.createClient(SB_URL, SB_KEY);
@@ -147,12 +115,17 @@ const SYMBOLS = [
     { id: 1, name: '🔮', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Amethyst.PNG', prob: 0.22, p3: 25,  p5: 50,  label: '紫水晶', color: '#d084ff' },
     { id: 2, name: '♦️', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Spinel.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '尖晶石', color: '#ff4d4d' },
     { id: 3, name: '💧', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/Celestite.PNG', prob: 0.15, p3: 10,  p5: 20,  label: '天青石', color: '#00f2ff' },
-    { id: 4, name: '⚪', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG',   prob: 0.40, p3: 20,  p5: 30,  label: '珍珠', color: '#eee' }
+    { id: 4, name: '⚪', img: 'https://knasaqqsqofcskazalwf.supabase.co/storage/v1/object/public/game-assets/pearl.PNG', prob: 0.40, p3: 20,  p5: 30,  label: '珍珠', color: '#eee' }
 ];
 
 let userData = null;
 let isBusy = false;
 let isFirstSpinToday = false;
+
+function toggleRules() {
+    const m = document.getElementById('rule-modal');
+    m.style.display = (m.style.display === 'none' || m.style.display === '') ? 'flex' : 'none';
+}
 
 async function handleLogin() {
     const user = document.getElementById('user-in').value.trim();
@@ -161,7 +134,7 @@ async function handleLogin() {
     try {
         let { data } = await _sb.from('player_stats').select('*').eq('username', user).maybeSingle();
         if(!data) {
-            const { data: n } = await _sb.from('player_stats').insert([{ username: user, password: pass, total_points: 0, experience: 0, spins: 0, extra_spins: 0, last_play_date: new Date() }]).select().single();
+            const { data: n } = await _sb.from('player_stats').insert([{ username: user, password: pass, total_points: 0, spins: 0, extra_spins: 0, last_play_date: new Date() }]).select().single();
             userData = n;
         } else {
             if(data.password !== pass) return alert("密碼錯誤");
@@ -171,7 +144,7 @@ async function handleLogin() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('game-area').style.display = 'grid';
         initGrid(); loadMissions(); updateUI();
-    } catch (e) { console.dir(e); }
+    } catch (e) { console.error(e); }
 }
 
 function checkDaily() {
@@ -190,7 +163,7 @@ function initGrid() {
 
 async function processSpin() {
     if(isBusy) return;
-    if(!isFirstSpinToday && userData.spins <= 0 && userData.extra_spins <= 0) return alert("次數不足");
+    if(!isFirstSpinToday && userData.spins <= 0 && userData.extra_spins <= 0) return alert("請紀錄任務！");
     isBusy = true;
     document.getElementById('spin-btn').disabled = true;
     document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
@@ -200,11 +173,11 @@ async function processSpin() {
     const interval = setInterval(() => {
         for(let i=0; i<15; i++) {
             const r = SYMBOLS[Math.floor(Math.random()*5)];
-            document.getElementById(`c-${i}`).innerHTML = `<img src="${r.img}" onerror="this.outerHTML='${r.name}'">`;
+            document.getElementById(`c-${i}`).innerText = r.name;
         }
     }, 80);
 
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 1200));
     clearInterval(interval);
     gridEl.classList.remove('shaking');
 
@@ -219,38 +192,37 @@ async function processSpin() {
         if (!isFirstSpinToday || winMatches.length > 0) break;
     }
 
-    if(isFirstSpinToday) { isFirstSpinToday = false; document.getElementById('guarantee-msg').style.visibility = 'hidden'; addLog("⭐ 首轉保底達成！"); }
-    else { if(userData.extra_spins > 0) userData.extra_spins--; else userData.spins--; }
+    if(isFirstSpinToday) { 
+        isFirstSpinToday = false; 
+        document.getElementById('guarantee-msg').style.visibility = 'hidden'; 
+        addLog("⭐ 首轉保底達成，不扣次數！");
+    } else { 
+        if(userData.extra_spins > 0) userData.extra_spins--; else userData.spins--; 
+    }
 
-    for(let i=0; i<15; i++) document.getElementById(`c-${i}`).innerHTML = `<img src="${finalGrid[i].img}" onerror="this.outerHTML='${finalGrid[i].name}'">`;
+    for(let i=0; i<15; i++) document.getElementById(`c-${i}`).innerText = finalGrid[i].name;
 
     await calculateScore(finalGrid, winMatches);
     isBusy = false;
     document.getElementById('spin-btn').disabled = false;
 }
 
-/** 精確計分邏輯修正 **/
 function analyzeGrid(grid) {
     const paths = [];
-    for(let r=0; r<3; r++) paths.push([r*5, r*5+1, r*5+2, r*5+3, r*5+4]); // 橫
-    for(let c=0; c<5; c++) paths.push([c, c+5, c+10]); // 直
-    paths.push([0, 6, 12], [1, 7, 13], [2, 8, 14], [2, 6, 10], [3, 7, 11], [4, 8, 12]); // 斜
+    for(let r=0; r<3; r++) paths.push([r*5, r*5+1, r*5+2, r*5+3, r*5+4]);
+    for(let c=0; c<5; c++) paths.push([c, c+5, c+10]);
+    paths.push([0, 6, 12], [4, 8, 12], [2, 6, 10], [2, 8, 14]);
 
     const wins = [];
     paths.forEach(p => {
-        const syms = p.map(idx => grid[idx]);
-        
-        // 1. 先抓出所有長度為 3 的連續組合 (不管 4 連還是 5 連都會被拆解)
         for (let start = 0; start <= p.length - 3; start++) {
-            const subIdx = p.slice(start, start + 3);
-            if (subIdx.every(i => grid[i].id === grid[subIdx[0]].id)) {
-                wins.push({ pts: grid[subIdx[0]].p3, id: grid[subIdx[0]].id, cells: subIdx, label: grid[subIdx[0]].label });
+            const sub = p.slice(start, start + 3);
+            if (sub.every(i => grid[i].id === grid[sub[0]].id)) {
+                wins.push({ pts: grid[sub[0]].p3, id: grid[sub[0]].id, cells: sub, label: grid[sub[0]].label });
             }
         }
-
-        // 2. 只有在「整條路徑長度為 5」且「5 個都一樣」時，才補一筆 5 連大獎
-        if (p.length === 5 && syms.every(s => s.id === syms[0].id)) {
-            wins.push({ pts: syms[0].p5, id: syms[0].id, cells: p, label: syms[0].label });
+        if (p.length === 5 && p.every(i => grid[i].id === grid[p[0]].id)) {
+            wins.push({ pts: grid[p[0]].p5, id: grid[p[0]].id, cells: p, label: grid[p[0]].label });
         }
     });
     return wins;
@@ -267,12 +239,12 @@ async function calculateScore(grid, wins) {
         if(win.id === 3) userData.extra_spins++;
         spinTotal += s;
         showPop(s, SYMBOLS[win.id].color);
-        addLog(`${win.label} 連線！(+${s})`);
-        await new Promise(r => setTimeout(r, 450));
+        addLog(`${win.label} 連線 (+${s})`);
+        await new Promise(r => setTimeout(r, 400));
     }
     if(spinelBonus > 0 && spinTotal > 0) {
         let b = Math.round(spinTotal * 0.1 * spinelBonus);
-        spinTotal += b; showPop(b, 'var(--red)'); addLog(`尖晶石加成：+${b}`);
+        spinTotal += b; showPop(b, 'var(--red)'); addLog(`尖晶石加成 (+${b})`);
     }
     userData.total_points += spinTotal; syncData(); updateUI();
 }
@@ -296,8 +268,8 @@ async function syncData() {
 
 async function addMission(type) {
     const val = document.getElementById('m-content').value; if(!val) return;
-    const encrypted = btoa(encodeURIComponent(val));
-    await _sb.from('missions').insert([{ username: userData.username, type, encrypted, created_at: new Date().toISOString() }]);
+    const enc = btoa(encodeURIComponent(val));
+    await _sb.from('missions').insert([{ username: userData.username, type, encrypted: enc, created_at: new Date().toISOString() }]);
     if(type === 'small') userData.spins += 1; else userData.spins += 5;
     document.getElementById('m-content').value = '';
     syncData(); updateUI(); loadMissions();
@@ -324,7 +296,6 @@ async function handleWithdraw() {
     if(a > 0 && a <= userData.total_points) { userData.total_points -= a; syncData(); updateUI(); alert("提領成功"); }
 }
 
-function showProfile() { alert(`經驗值：${userData.experience}`); }
 function addLog(m) { const l = document.getElementById('game-log'); l.innerHTML = `<div>> ${m}</div>` + l.innerHTML; }
 </script>
 </body>
