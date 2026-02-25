@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 規則強化版</title>
+    <title>寶石拉霸機 - 尖晶石效果優化版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --blue: #2b57ff; --bg: #121212; }
@@ -15,7 +15,7 @@
         .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; overflow: hidden; }
         .cell img { width: 85% !important; height: 85% !important; object-fit: contain !important; display: block; }
         
-        /* 規則視窗排版優化 */
+        /* 規則視窗排版 */
         #rule-modal .panel { max-width: 500px; max-height: 85vh; overflow-y: auto; line-height: 1.6; }
         .rule-table { width: 100%; border-collapse: collapse; margin: 15px 0; background: #222; border-radius: 8px; overflow: hidden; }
         .rule-table th { background: #333; color: var(--gold); padding: 10px; font-size: 0.9rem; }
@@ -44,7 +44,7 @@
 </head>
 <body>
 
-    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000; box-shadow: 0 0 10px rgba(255,215,0,0.5);">?</div>
+    <div id="rule-btn" onclick="toggleRules()" style="position:fixed; top:20px; left:20px; width:45px; height:45px; background:var(--gold); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.5rem; cursor:pointer; z-index:1000;">?</div>
 
     <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; padding:20px;">
         <div class="panel" style="border:2px solid var(--gold);" onclick="event.stopPropagation()">
@@ -62,13 +62,13 @@
             <h3 style="color:var(--gold); border-left:4px solid var(--gold); padding-left:10px;">✨ 特殊效果說明</h3>
             <div class="effect-list">
                 <div class="effect-item">
-                    <b> 天青石：</b>任何形式的連線達成，額外獲得 <b>+1 次轉動機會</b>。
+                    <b>💧 天青石：</b>任何形式的連線達成，額外獲得 <b>+1 次轉動機會</b>。
                 </div>
                 <div class="effect-item">
-                    <b> 尖晶石：</b>中獎時，總分額外加成。每多一組中獎連線，總得分 <b>+10%</b>。
+                    <b>♦️ 尖晶石：</b>每有一組尖晶石連線，使這次轉動的分數額外 <b>+20%</b> (於最終結算時增加)。
                 </div>
                 <div class="effect-item">
-                    <b> 紫水晶：</b>若當次旋轉「僅有」紫水晶達成連線，該次總得分 <b>直接翻倍 (x2)</b>。
+                    <b>🔮 紫水晶：</b>若當次旋轉「僅有」紫水晶達成連線，該次總得分 <b>直接翻倍 (x2)</b>。
                 </div>
             </div>
 
@@ -119,8 +119,6 @@
     </div>
 
 <script>
-// 此處保留你目前的所有 JavaScript (SB_URL, SYMBOLS, analyzeGrid, calculateScore 等)
-// 請將你原本 SYMBOLS 中的圖片網址再次貼入即可。
 const SB_URL = "https://knasaqqsqofcskazalwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYXNhcXFzcW9mY3NrYXphbHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTcxNTksImV4cCI6MjA4NzQ5MzE1OX0.TxpnxsEGd6L2aBfHn2FttPFXtMyk3VeM44IgyzheTpU";
 const _sb = supabase.createClient(SB_URL, SB_KEY);
@@ -257,30 +255,48 @@ function analyzeGrid(grid) {
     return wins;
 }
 
+/**
+ * 核心修改：尖晶石效果調整為總得分加成
+ */
 async function calculateScore(grid, wins) {
     let baseScore = 0, spinelCount = 0;
     const amethystOnly = wins.length > 0 && wins.every(w => w.id === 1);
+    
+    // 第一步：先算出所有連線的基礎總分
     for (const win of wins) {
         win.cells.forEach(idx => document.getElementById(`c-${idx}`).classList.add('winning-cell'));
         if(win.id === 3) userData.extra_spins++;
-        if(win.id === 2) spinelCount++;
+        if(win.id === 2) spinelCount++; // 統計尖晶石連線組數
         baseScore += win.pts;
         showPop(win.pts, SYMBOLS[win.id].color);
         addLog(`${win.label}${win.count}連 (+${win.pts})`);
         await new Promise(r => setTimeout(r, 600));
     }
+
     let finalAdded = baseScore;
-    if (spinelCount > 0 && baseScore > 0) {
-        let bonus = Math.round(baseScore * 0.1 * wins.length);
-        finalAdded += bonus; showPop(bonus, 'var(--red)'); addLog(`尖晶石加成 (+${bonus})`);
-        await new Promise(r => setTimeout(r, 500));
-    }
+
+    // 第二步：處理紫水晶獨佔翻倍（在加成前計算）
     if (amethystOnly && baseScore > 0) {
         let double = finalAdded;
-        finalAdded += double; showPop(double, 'var(--purple)'); addLog(`紫水晶獨佔翻倍 (+${double})`);
+        finalAdded += double; 
+        showPop(double, 'var(--purple)'); 
+        addLog(`紫水晶獨佔翻倍 (+${double})`);
         await new Promise(r => setTimeout(r, 500));
     }
-    userData.total_points += finalAdded; await syncData(); updateUI();
+
+    // 第三步：【尖晶石最終加成】每組連線 +20% 總分
+    if (spinelCount > 0 && finalAdded > 0) {
+        let bonusRate = 0.20 * spinelCount;
+        let bonusPoints = Math.round(finalAdded * bonusRate);
+        finalAdded += bonusPoints; 
+        showPop(bonusPoints, 'var(--red)'); 
+        addLog(`尖晶石連線x${spinelCount}加成 (+${bonusPoints})`);
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    userData.total_points += finalAdded; 
+    await syncData(); 
+    updateUI();
 }
 
 function showPop(val, color) {
