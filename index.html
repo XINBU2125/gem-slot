@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶石拉霸機 - 尖晶石效果優化版</title>
+    <title>寶石拉霸機 - 完整修正版</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #ffd700; --purple: #d084ff; --red: #ff4d4d; --cyan: #00f2ff; --blue: #2b57ff; --bg: #121212; }
@@ -15,7 +15,7 @@
         .cell { width: 95px; height: 95px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px solid transparent; overflow: hidden; }
         .cell img { width: 85% !important; height: 85% !important; object-fit: contain !important; display: block; }
         
-        /* 規則視窗排版 */
+        /* 規則視窗 */
         #rule-modal .panel { max-width: 500px; max-height: 85vh; overflow-y: auto; line-height: 1.6; }
         .rule-table { width: 100%; border-collapse: collapse; margin: 15px 0; background: #222; border-radius: 8px; overflow: hidden; }
         .rule-table th { background: #333; color: var(--gold); padding: 10px; font-size: 0.9rem; }
@@ -28,18 +28,18 @@
 
         .score-pop { position: absolute; font-weight: bold; font-size: 5rem; top: 40%; left: 50%; transform: translate(-50%, -50%); animation: floatUpCentral 1.5s forwards; z-index: 999; text-shadow: 0 0 30px #000; pointer-events: none; white-space: nowrap; }
         @keyframes floatUpCentral { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
-        @media (max-width: 1100px) {
-            #game-area { display: none; flex-direction: column !important; width: 100vw !important; padding: 10px 0 !important; gap: 15px !important; }
-            .panel { width: 92vw !important; margin: 0 auto !important; }
-            #slot-grid { grid-template-columns: repeat(5, 17vw) !important; width: 92vw !important; padding: 10px !important; gap: 1.5vw !important; margin: 0 auto !important; }
-            .cell { width: 16vw !important; height: 16vw !important; }
-            .score-pop { font-size: 3rem !important; }
-        }
+        
         .winning-cell { border-color: white !important; box-shadow: 0 0 20px white; background: #333 !important; z-index: 5; }
         button { padding: 12px 20px; background: var(--gold); border: none; cursor: pointer; font-weight: bold; border-radius: 6px; }
         button:disabled { background: #555; cursor: not-allowed; }
         .shaking { animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
+
+        @media (max-width: 1100px) {
+            #game-area { display: flex; flex-direction: column; width: 95vw; }
+            .panel { width: 100%; margin-bottom: 15px; }
+            #slot-grid { grid-template-columns: repeat(5, 1fr); width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -49,7 +49,6 @@
     <div id="rule-modal" onclick="toggleRules()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; padding:20px;">
         <div class="panel" style="border:2px solid var(--gold);" onclick="event.stopPropagation()">
             <h2 style="color:var(--gold); text-align:center; margin-top:0;">💎 遊戲規則與倍率</h2>
-            
             <table class="rule-table">
                 <tr><th>寶石種類</th><th>3連</th><th>4連</th><th>5連</th></tr>
                 <tr><td class="txt-cyan">鑽石</td><td>200</td><td>300</td><td>600</td></tr>
@@ -58,21 +57,13 @@
                 <tr><td class="txt-blue">天青石</td><td>10</td><td>20</td><td>40</td></tr>
                 <tr><td>珍珠</td><td>20</td><td>30</td><td>40</td></tr>
             </table>
-
             <h3 style="color:var(--gold); border-left:4px solid var(--gold); padding-left:10px;">✨ 特殊效果說明</h3>
             <div class="effect-list">
-                <div class="effect-item">
-                    <b> 天青石：</b>任何形式的連線達成，額外獲得 <b>+1 次轉動機會</b>。
-                </div>
-                <div class="effect-item">
-                    <b> 尖晶石：</b>每有一組尖晶石連線，使這次轉動的分數額外 <b>+20%</b> (於最終結算時增加)。
-                </div>
-                <div class="effect-item">
-                    <b> 紫水晶：</b>若當次旋轉「僅有」紫水晶達成連線，該次總得分 <b>直接翻倍 (x2)</b>。
-                </div>
+                <div class="effect-item"><b>💧 天青石：</b>連線達成，額外獲得 <b>+1 次轉動機會</b>。</div>
+                <div class="effect-item"><b>♦️ 尖晶石：</b>每有一組連線，使這次轉動總得分額外 <b>+20%</b>。</div>
+                <div class="effect-item"><b>🔮 紫水晶：</b>若當次僅有紫水晶連線，總得分 <b>直接翻倍 (x2)</b>。</div>
             </div>
-
-            <button onclick="toggleRules()" style="width:100%; margin-top:10px; font-size:1.1rem;">我了解了</button>
+            <button onclick="toggleRules()" style="width:100%; margin-top:10px;">了解</button>
         </div>
     </div>
 
@@ -84,25 +75,32 @@
     </div>
 
     <div id="game-area">
-        <div style="display:flex; flex-direction:column; gap:20px;">
-            <div class="panel">
-                <h3>🎯 任務紀錄</h3>
-                <textarea id="m-content" placeholder="輸入內容..." style="width:95%; height:60px; background:#111; color:white; padding:10px; border:1px solid #444;"></textarea>
-                <button onclick="addMission('small')" style="width:100%; margin-top:10px;">小目標 (+1轉)</button>
-                <button onclick="addMission('big')" style="width:100%; margin-top:10px; background:#b8860b;">大成就 (+5轉)</button>
-                <div id="mission-list" style="margin-top:15px; font-size: 0.85rem; height: 250px; overflow-y: auto;"></div>
-            </div>
+        <div class="panel">
+            <h3>🎯 任務紀錄</h3>
+            <textarea id="m-content" placeholder="輸入內容..." style="width:95%; height:60px; background:#111; color:white; padding:10px; border:1px solid #444;"></textarea>
+            <button onclick="addMission('small')" style="width:100%; margin-top:10px;">小目標 (+1轉)</button>
+            <button onclick="addMission('big')" style="width:100%; margin-top:10px; background:#b8860b;">大成就 (+5轉)</button>
+            <div id="mission-list" style="margin-top:15px; font-size: 0.85rem; height: 250px; overflow-y: auto;"></div>
         </div>
 
         <div style="text-align: center;">
-            <div id="guarantee-msg" style="color:#ffeb3b; font-weight:bold; visibility:hidden; font-size: 0.9rem;">⭐ 今日首轉免費</div>
+            <div id="guarantee-msg" style="color:#ffeb3b; font-weight:bold; visibility:hidden; font-size: 0.9rem;">⭐ 今日首轉保底</div>
             <div style="margin-bottom:10px;">
                 <span style="color:#aaa;">總積分</span>
                 <div id="point-display" style="color:var(--gold); font-size: 3rem; font-weight:bold;">0</div>
             </div>
             <div id="slot-grid"></div>
             <button id="spin-btn" onclick="processSpin()" style="margin-top:20px; font-size: 1.8rem; width: 100%; height: 70px;">🎰 開始轉動</button>
+            
             <button onclick="handleWithdraw()" style="background:#444; color:white; width: 100%; margin-top:10px;">提領分數</button>
+            
+            <div style="margin-top: 15px; padding: 15px; border: 1px solid #444; border-radius: 8px; background: rgba(0,0,0,0.3);">
+                <div style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">分數兌換次數 (200分/轉)</div>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="exchange-amount" placeholder="輸入分數" style="flex: 1; padding: 8px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                    <button onclick="handleExchange()" style="background: var(--cyan); color: black; padding: 8px 15px; font-size: 0.9rem;">兌換</button>
+                </div>
+            </div>
         </div>
 
         <div class="panel">
@@ -117,46 +115,9 @@
             <div id="game-log" style="margin-top:15px; height: 150px; overflow-y: auto; font-size: 0.75rem; color:#888; border-top:1px solid #333; padding-top:10px;">> 紀錄區...</div>
         </div>
     </div>
-<div id="point-display" style="color:var(--gold); font-size: 3rem; font-weight:bold;">0</div>
-</div>
-<div id="slot-grid"></div>
 
-<button id="spin-btn" onclick="processSpin()" style="margin-top:20px; font-size: 1.8rem; width: 100%; height: 70px;">🎰 開始轉動</button>
-
-<button onclick="handleWithdraw()" style="background:#444; color:white; width: 100%; margin-top:10px;">提領分數</button>
-
-<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;">
-    <div style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">分數兌換次數 (200分/轉)</div>
-    <div style="display: flex; gap: 5px;">
-        <input type="number" id="exchange-amount" placeholder="輸入分數" style="flex: 1; padding: 8px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-        <button onclick="handleExchange()" style="background: var(--cyan); color: black; padding: 8px 15px;">兌換</button>
-    </div>
-</div>
-</div> ```
-
----
-
-### ⚠️ 絕對不能放錯的地方
-
-1.  **不可放在 `handleWithdraw()` 的大括號 `{ }` 裡面**：那是寫 JavaScript 的地方，放 HTML 會導致語法錯誤。
-2.  **不可放在 `<script>` 標籤之後**：所有的 HTML 介面都必須寫在 `<script>` 標籤開始之前，否則畫面會顯示不出來。
-
-### 💡 修正後的 JavaScript 區塊（第 150 行以後）
-請確保你的 `handleWithdraw` 函數現在長這樣（已經把 HTML 標籤刪除了）：
-
-```javascript
-function handleWithdraw() {
-    // 這裡現在是乾淨的 JavaScript
-    const v = prompt("輸入提領分數:"); 
-    const a = parseInt(v);
-    if(a > 0 && a <= userData.total_points) { 
-        userData.total_points -= a; 
-        syncData(); 
-        updateUI(); 
-        alert("提領成功！"); 
-    }
-}
 <script>
+// --- 初始化與資料 ---
 const SB_URL = "https://knasaqqsqofcskazalwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYXNhcXFzcW9mY3NrYXphbHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTcxNTksImV4cCI6MjA4NzQ5MzE1OX0.TxpnxsEGd6L2aBfHn2FttPFXtMyk3VeM44IgyzheTpU";
 const _sb = supabase.createClient(SB_URL, SB_KEY);
@@ -171,11 +132,54 @@ const SYMBOLS = [
 
 let userData = null; let isBusy = false; let isFirstSpinToday = false;
 
+// --- 介面控制 ---
 function toggleRules() {
     const m = document.getElementById('rule-modal');
     m.style.display = (m.style.display === 'none' || m.style.display === '') ? 'flex' : 'none';
 }
 
+function updateUI() {
+    if(!userData) return;
+    document.getElementById('point-display').innerText = userData.total_points.toLocaleString();
+    document.getElementById('spin-count').innerText = userData.spins;
+    document.getElementById('extra-count').innerText = userData.extra_spins;
+}
+
+// --- 兌換與提領 (純 JS 邏輯) ---
+async function handleExchange() {
+    if (isBusy || !userData) return;
+    const inputEl = document.getElementById('exchange-amount');
+    const amount = parseInt(inputEl.value);
+
+    if (isNaN(amount) || amount < 200) {
+        alert("請輸入至少 200 分！"); return;
+    }
+    if (amount > userData.total_points) {
+        alert("餘額不足！"); return;
+    }
+
+    const gainSpins = Math.floor(amount / 200);
+    const costPoints = gainSpins * 200;
+
+    if (confirm(`消耗 ${costPoints} 分兌換 ${gainSpins} 轉？`)) {
+        userData.total_points -= costPoints;
+        userData.spins += gainSpins;
+        await syncData();
+        updateUI();
+        addLog(`兌換成功：+${gainSpins} 轉`);
+        inputEl.value = '';
+    }
+}
+
+function handleWithdraw() {
+    const v = prompt("輸入提領分數:"); const a = parseInt(v);
+    if(a > 0 && a <= userData.total_points) { 
+        userData.total_points -= a; 
+        syncData(); updateUI(); alert("提領成功！"); 
+    }
+}
+
+// --- 核心遊戲邏輯 ---
 async function handleLogin() {
     const user = document.getElementById('user-in').value.trim();
     const pass = document.getElementById('pass-in').value.trim();
@@ -191,13 +195,9 @@ async function handleLogin() {
         }
         checkDaily();
         document.getElementById('login-screen').style.display = 'none';
-        updateAreaLayout(); initGrid(); loadMissions(); updateUI();
+        document.getElementById('game-area').style.display = 'grid';
+        initGrid(); loadMissions(); updateUI();
     } catch (e) { console.error(e); }
-}
-
-function updateAreaLayout() {
-    const gameArea = document.getElementById('game-area');
-    gameArea.style.display = window.innerWidth <= 1100 ? 'flex' : 'grid';
 }
 
 function checkDaily() {
@@ -230,12 +230,13 @@ async function processSpin() {
     const btn = document.getElementById('spin-btn');
     btn.disabled = true; btn.innerText = "旋轉中...";
     document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
-    const gridEl = document.getElementById('slot-grid');
-    gridEl.classList.add('shaking');
+    document.getElementById('slot-grid').classList.add('shaking');
+    
     const interval = setInterval(() => { for(let i=0; i<15; i++) renderCell(i, SYMBOLS[Math.floor(Math.random()*5)]); }, 80);
     await new Promise(r => setTimeout(r, 1200));
     clearInterval(interval);
-    gridEl.classList.remove('shaking');
+    document.getElementById('slot-grid').classList.remove('shaking');
+
     let winMatches = [], finalGrid = [];
     while(true) {
         finalGrid = Array.from({length: 15}, () => {
@@ -246,8 +247,10 @@ async function processSpin() {
         winMatches = analyzeGrid(finalGrid);
         if (!isFirstSpinToday || winMatches.length > 0) break;
     }
+
     if(isFirstSpinToday) { isFirstSpinToday = false; document.getElementById('guarantee-msg').style.visibility = 'hidden'; }
     else { if(userData.extra_spins > 0) userData.extra_spins--; else userData.spins--; }
+
     for(let i=0; i<15; i++) renderCell(i, finalGrid[i]);
     await calculateScore(finalGrid, winMatches);
     isBusy = false; btn.disabled = false; btn.innerText = "🎰 開始轉動";
@@ -260,93 +263,50 @@ function analyzeGrid(grid) {
     rowStarts.forEach(start => {
         const row = [start, start+1, start+2, start+3, start+4];
         const ids = row.map(idx => grid[idx].id);
-        let foundRowWin = false;
-        if (ids[0]===ids[1] && ids[1]===ids[2] && ids[2]===ids[3] && ids[3]===ids[4]) {
-            const sym = grid[row[0]]; wins.push({ pts: sym.p5, id: sym.id, cells: row, label: sym.label, count: 5 });
-            foundRowWin = true;
-        } 
-        if (!foundRowWin) {
-            for (let i = 0; i <= 1; i++) {
-                if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2] && ids[i+2]===ids[i+3]) {
-                    const sym = grid[row[i]]; wins.push({ pts: sym.p4, id: sym.id, cells: row.slice(i, i+4), label: sym.label, count: 4 });
-                    foundRowWin = true; break;
-                }
-            }
-        }
-        if (!foundRowWin) {
-            for (let i = 0; i <= 2; i++) {
-                if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2]) {
-                    const sym = grid[row[i]]; wins.push({ pts: sym.p3, id: sym.id, cells: row.slice(i, i+3), label: sym.label, count: 3 });
-                    foundRowWin = true; break;
-                }
-            }
+        if (ids[0]===ids[1] && ids[1]===ids[2] && ids[2]===ids[3] && ids[3]===ids[4]) wins.push({ pts: grid[row[0]].p5, id: grid[row[0]].id, cells: row, label: grid[row[0]].label, count: 5 });
+        else {
+            for (let i = 0; i <= 1; i++) if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2] && ids[i+2]===ids[i+3]) { wins.push({ pts: grid[row[i]].p4, id: grid[row[i]].id, cells: row.slice(i, i+4), label: grid[row[i]].label, count: 4 }); break; }
+            for (let i = 0; i <= 2; i++) if (ids[i]===ids[i+1] && ids[i+1]===ids[i+2]) { wins.push({ pts: grid[row[i]].p3, id: grid[row[i]].id, cells: row.slice(i, i+3), label: grid[row[i]].label, count: 3 }); break; }
         }
     });
-    for (let c = 0; c < 5; c++) {
-        if (grid[c].id === grid[c+5].id && grid[c].id === grid[c+10].id) wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+5, c+10], label: grid[c].label, count: 3 });
-    }
+    for (let c = 0; c < 5; c++) if (grid[c].id === grid[c+5].id && grid[c].id === grid[c+10].id) wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+5, c+10], label: grid[c].label, count: 3 });
     for (let c = 0; c <= 2; c++) {
         if (grid[c].id === grid[c+6].id && grid[c].id === grid[c+12].id) wins.push({ pts: grid[c].p3, id: grid[c].id, cells: [c, c+6, c+12], label: grid[c].label, count: 3 });
-        let tr = c + 2;
-        if (grid[tr].id === grid[tr+4].id && grid[tr].id === grid[tr+8].id) wins.push({ pts: grid[tr].p3, id: grid[tr].id, cells: [tr, tr+4, tr+8], label: grid[tr].label, count: 3 });
+        if (grid[c+2].id === grid[c+6].id && grid[c+2].id === grid[c+10].id) wins.push({ pts: grid[c+2].p3, id: grid[c+2].id, cells: [c+2, c+6, c+10], label: grid[c+2].label, count: 3 });
     }
     return wins;
 }
 
-/**
- * 核心修改：尖晶石效果調整為總得分加成
- */
 async function calculateScore(grid, wins) {
     let baseScore = 0, spinelCount = 0;
     const amethystOnly = wins.length > 0 && wins.every(w => w.id === 1);
-    
-    // 第一步：先算出所有連線的基礎總分
     for (const win of wins) {
         win.cells.forEach(idx => document.getElementById(`c-${idx}`).classList.add('winning-cell'));
         if(win.id === 3) userData.extra_spins++;
-        if(win.id === 2) spinelCount++; // 統計尖晶石連線組數
+        if(win.id === 2) spinelCount++;
         baseScore += win.pts;
         showPop(win.pts, SYMBOLS[win.id].color);
         addLog(`${win.label}${win.count}連 (+${win.pts})`);
         await new Promise(r => setTimeout(r, 600));
     }
-
     let finalAdded = baseScore;
-
-    // 第二步：處理紫水晶獨佔翻倍（在加成前計算）
     if (amethystOnly && baseScore > 0) {
-        let double = finalAdded;
-        finalAdded += double; 
-        showPop(double, 'var(--purple)'); 
-        addLog(`紫水晶獨佔翻倍 (+${double})`);
+        let double = finalAdded; finalAdded += double;
+        showPop(double, 'var(--purple)'); addLog(`紫水晶翻倍 (+${double})`);
         await new Promise(r => setTimeout(r, 500));
     }
-
-    // 第三步：【尖晶石最終加成】每組連線 +20% 總分
     if (spinelCount > 0 && finalAdded > 0) {
-        let bonusRate = 0.20 * spinelCount;
-        let bonusPoints = Math.round(finalAdded * bonusRate);
-        finalAdded += bonusPoints; 
-        showPop(bonusPoints, 'var(--red)'); 
-        addLog(`尖晶石連線x${spinelCount}加成 (+${bonusPoints})`);
+        let bonus = Math.round(finalAdded * 0.20 * spinelCount);
+        finalAdded += bonus;
+        showPop(bonus, 'var(--red)'); addLog(`尖晶石加成 (+${bonus})`);
         await new Promise(r => setTimeout(r, 500));
     }
-
-    userData.total_points += finalAdded; 
-    await syncData(); 
-    updateUI();
+    userData.total_points += finalAdded; await syncData(); updateUI();
 }
 
 function showPop(val, color) {
     const e = document.createElement('div'); e.className = 'score-pop'; e.style.color = color; e.innerText = `+${val}`;
     document.getElementById('slot-grid').appendChild(e); setTimeout(() => e.remove(), 1500);
-}
-
-function updateUI() {
-    if(!userData) return;
-    document.getElementById('point-display').innerText = userData.total_points.toLocaleString();
-    document.getElementById('spin-count').innerText = userData.spins;
-    document.getElementById('extra-count').innerText = userData.extra_spins;
 }
 
 async function syncData() {
@@ -358,68 +318,18 @@ async function addMission(type) {
     const enc = btoa(encodeURIComponent(val));
     await _sb.from('missions').insert([{ username: userData.username, type, encrypted: enc, created_at: new Date().toISOString() }]);
     if(type === 'small') userData.spins += 1; else userData.spins += 5;
-    document.getElementById('m-content').value = ''; syncData(); updateUI(); loadMissions();
+    document.getElementById('m-content').value = ''; await syncData(); updateUI(); loadMissions();
 }
 
 async function loadMissions() {
     let { data } = await _sb.from('missions').select('*').eq('username', userData.username).order('created_at', {ascending: false});
     const list = document.getElementById('mission-list'); list.innerHTML = '';
-    const groups = {};
     data.forEach(m => {
-        const d = new Date(m.created_at).toLocaleDateString();
-        if(!groups[d]) groups[d] = []; groups[d].push(m);
+        list.innerHTML += `<div style="padding:2px 0; border-bottom:1px solid #222; font-size:0.8rem;">[${m.type==='big'?'成就':'任務'}] ${decodeURIComponent(atob(m.encrypted))}</div>`;
     });
-    for(let d in groups) {
-        let h = `<div style="margin-top:10px; border-left:3px solid var(--gold); padding-left:10px;"><div style="color:var(--gold); font-size:0.8rem; font-weight:bold;">${d}</div>`;
-        groups[d].forEach(m => { h += `<div style="padding:2px 0; border-bottom:1px solid #222; font-size:0.8rem;">[${m.type==='big'?'成就':'任務'}] ${decodeURIComponent(atob(m.encrypted))}</div>`; });
-        list.innerHTML += h + `</div>`;
-    }
 }
 
-function handleWithdraw() {
-
-    const v = prompt("輸入提領分數:"); const a = parseInt(v);
-    if(a > 0 && a <= userData.total_points) { userData.total_points -= a; syncData(); updateUI(); alert("提領成功！"); }
-}
-
-    /**
- * 兌換功能：將分數轉換為轉動次數
- * 每 200 分兌換 1 轉
- */
-async function handleExchange() {
-    if (isBusy) return;
-    
-    const inputEl = document.getElementById('exchange-amount');
-    const amount = parseInt(inputEl.value);
-
-    // 1. 基礎檢查
-    if (isNaN(amount) || amount < 200) {
-        alert("請輸入至少 200 的整數分數！");
-        return;
-    }
-
-    if (amount > userData.total_points) {
-        alert("餘額不足，你目前只有 " + userData.total_points + " 分");
-        return;
-    }
-
-    // 2. 計算可獲得次數與剩餘分數
-    const gainSpins = Math.floor(amount / 200);
-    const costPoints = gainSpins * 200; // 確保只扣除整除的部分
-
-    if (confirm(`確定要消耗 ${costPoints} 分兌換 ${gainSpins} 次轉動嗎？`)) {
-        userData.total_points -= costPoints;
-        userData.spins += gainSpins;
-
-        // 3. 同步至資料庫並更新 UI
-        await syncData();
-        updateUI();
-        addLog(`兌換成功：消耗 ${costPoints} 分，獲得 ${gainSpins} 次轉動`);
-        inputEl.value = ''; // 清空輸入框
-    }
-}
 function addLog(m) { const l = document.getElementById('game-log'); l.innerHTML = `<div>> ${m}</div>` + l.innerHTML; }
-window.addEventListener('resize', () => { if(userData) updateAreaLayout(); });
 </script>
 </body>
 </html>
