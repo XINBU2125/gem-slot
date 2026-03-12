@@ -117,7 +117,45 @@
             <div id="game-log" style="margin-top:15px; height: 150px; overflow-y: auto; font-size: 0.75rem; color:#888; border-top:1px solid #333; padding-top:10px;">> 紀錄區...</div>
         </div>
     </div>
+<div id="point-display" style="color:var(--gold); font-size: 3rem; font-weight:bold;">0</div>
+</div>
+<div id="slot-grid"></div>
 
+<button id="spin-btn" onclick="processSpin()" style="margin-top:20px; font-size: 1.8rem; width: 100%; height: 70px;">🎰 開始轉動</button>
+
+<button onclick="handleWithdraw()" style="background:#444; color:white; width: 100%; margin-top:10px;">提領分數</button>
+
+<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;">
+    <div style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">分數兌換次數 (200分/轉)</div>
+    <div style="display: flex; gap: 5px;">
+        <input type="number" id="exchange-amount" placeholder="輸入分數" style="flex: 1; padding: 8px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+        <button onclick="handleExchange()" style="background: var(--cyan); color: black; padding: 8px 15px;">兌換</button>
+    </div>
+</div>
+</div> ```
+
+---
+
+### ⚠️ 絕對不能放錯的地方
+
+1.  **不可放在 `handleWithdraw()` 的大括號 `{ }` 裡面**：那是寫 JavaScript 的地方，放 HTML 會導致語法錯誤。
+2.  **不可放在 `<script>` 標籤之後**：所有的 HTML 介面都必須寫在 `<script>` 標籤開始之前，否則畫面會顯示不出來。
+
+### 💡 修正後的 JavaScript 區塊（第 150 行以後）
+請確保你的 `handleWithdraw` 函數現在長這樣（已經把 HTML 標籤刪除了）：
+
+```javascript
+function handleWithdraw() {
+    // 這裡現在是乾淨的 JavaScript
+    const v = prompt("輸入提領分數:"); 
+    const a = parseInt(v);
+    if(a > 0 && a <= userData.total_points) { 
+        userData.total_points -= a; 
+        syncData(); 
+        updateUI(); 
+        alert("提領成功！"); 
+    }
+}
 <script>
 const SB_URL = "https://knasaqqsqofcskazalwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuYXNhcXFzcW9mY3NrYXphbHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTcxNTksImV4cCI6MjA4NzQ5MzE1OX0.TxpnxsEGd6L2aBfHn2FttPFXtMyk3VeM44IgyzheTpU";
@@ -339,13 +377,7 @@ async function loadMissions() {
 }
 
 function handleWithdraw() {
-    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;">
-    <div style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">分數兌換次數 (200分/轉)</div>
-    <div style="display: flex; gap: 5px;">
-        <input type="number" id="exchange-amount" placeholder="輸入分數" style="flex: 1; padding: 8px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-        <button onclick="handleExchange()" style="background: var(--cyan); color: black; padding: 8px 15px;">兌換</button>
-    </div>
-</div>
+
     const v = prompt("輸入提領分數:"); const a = parseInt(v);
     if(a > 0 && a <= userData.total_points) { userData.total_points -= a; syncData(); updateUI(); alert("提領成功！"); }
 }
